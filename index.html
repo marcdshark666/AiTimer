@@ -35,6 +35,8 @@
             <span class="status-dot"></span>
             <span>Live board</span>
           </div>
+          <button class="ghost-button" id="saveProfileButton">Spara profil</button>
+          <button class="ghost-button" id="resetBoardButton">Reset board</button>
           <button class="primary-button" id="newTimerButton">Ny timer</button>
         </div>
       </header>
@@ -97,7 +99,7 @@
     <aside class="drawer" id="drawer">
       <div class="drawer-header">
         <div>
-          <p class="section-kicker">Timerbibliotek</p>
+          <p class="section-kicker">Profiler och timers</p>
           <h3>Bygg din board</h3>
         </div>
         <button class="icon-button icon-button-close" id="closeDrawerButton" aria-label="Stäng sidopanel">
@@ -106,7 +108,40 @@
       </div>
 
       <section class="drawer-section">
-        <h4>Snabbmallar</h4>
+        <div class="drawer-history-header">
+          <h4>Professionella profiler</h4>
+        </div>
+        <div class="profile-grid" id="profileGrid"></div>
+      </section>
+
+      <section class="drawer-section">
+        <div class="drawer-history-header">
+          <h4>Sparade profiler</h4>
+          <button class="ghost-button" id="clearProfilesButton">Rensa</button>
+        </div>
+        <div class="saved-profile-list" id="savedProfileList"></div>
+      </section>
+
+      <section class="drawer-section">
+        <div class="drawer-history-header">
+          <h4>AI Studio</h4>
+        </div>
+        <p class="preset-description">
+          Skriv eller prata, så bygger assistenten timers direkt från din text.
+        </p>
+        <label>
+          <span class="section-kicker">Prompt</span>
+          <textarea id="aiPromptInput" class="ai-textarea" rows="5" placeholder="Exempel: skapa besök 20 min, labsvar 10 min, paus 5 min och en stopwatch för vidimering"></textarea>
+        </label>
+        <div class="profile-actions">
+          <button class="primary-button" id="generateAiButton">Skapa med AI</button>
+          <button class="ghost-button" id="listenAiButton">Lyssna</button>
+        </div>
+        <p class="saved-profile-meta" id="aiStatus">Redo att skapa timers från text eller röst.</p>
+      </section>
+
+      <section class="drawer-section">
+        <h4>Timerbibliotek</h4>
         <div class="preset-grid" id="presetGrid"></div>
       </section>
 
