@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AiTimer Free</title>
+    <meta
+      name="description"
+      content="AiTimer Free är en futuristisk, gratis timer-board för arbete, studier och vårdflöden."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <header class="topbar">
+        <div class="brand-row">
+          <button class="icon-button" id="menuButton" aria-label="Öppna sidopanel">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div class="brand-copy">
+            <p class="brand-eyebrow">Gratis webbversion</p>
+            <h1>AiTimer Free</h1>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="live-status" id="liveStatus">
+            <span class="status-dot"></span>
+            <span>Live board</span>
+          </div>
+          <button class="primary-button" id="newTimerButton">Ny timer</button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <main class="board-stage">
+          <section class="hero-strip">
+            <div>
+              <p class="section-kicker">Futuristisk timer-board</p>
+              <h2>Noll abonnemang. Full kontroll. Lokalt i webbläsaren.</h2>
+            </div>
+            <p class="hero-copy">
+              Byggd för snabba arbetsflöden med tydliga neonringar, svenska presets,
+              fokusläge och historik direkt i din browser.
+            </p>
+          </section>
+
+          <section class="timer-board" id="timerBoard" aria-label="Timeröversikt"></section>
+        </main>
+
+        <aside class="control-deck">
+          <section class="deck-panel deck-panel-feature" id="selectedPanel"></section>
+
+          <section class="deck-panel">
+            <div class="panel-heading">
+              <p class="section-kicker">System</p>
+              <h3>Snabbkommandon</h3>
+            </div>
+            <div class="shortcut-list">
+              <div>
+                <span>Space</span>
+                <p>Starta eller pausa vald timer</p>
+              </div>
+              <div>
+                <span>N</span>
+                <p>Skapa en ny timer</p>
+              </div>
+              <div>
+                <span>F</span>
+                <p>Öppna fokusläge för vald timer</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="deck-panel">
+            <div class="panel-heading">
+              <p class="section-kicker">Gratis</p>
+              <h3>Allt här är öppet</h3>
+            </div>
+            <ul class="feature-list">
+              <li>Countdown, stopwatch och Pomodoro-preset</li>
+              <li>Historik, lokal lagring och redigering</li>
+              <li>Responsiv design för mobil, surfplatta och desktop</li>
+            </ul>
+          </section>
+        </aside>
+      </div>
+    </div>
+
+    <aside class="drawer" id="drawer">
+      <div class="drawer-header">
+        <div>
+          <p class="section-kicker">Timerbibliotek</p>
+          <h3>Bygg din board</h3>
+        </div>
+        <button class="icon-button icon-button-close" id="closeDrawerButton" aria-label="Stäng sidopanel">
+          ×
+        </button>
+      </div>
+
+      <section class="drawer-section">
+        <h4>Snabbmallar</h4>
+        <div class="preset-grid" id="presetGrid"></div>
+      </section>
+
+      <section class="drawer-section">
+        <h4>Inställningar</h4>
+        <label class="toggle-row">
+          <span>Ljud vid färdig timer</span>
+          <input type="checkbox" id="soundToggle" />
+        </label>
+        <label class="toggle-row">
+          <span>Visa millisekunder</span>
+          <input type="checkbox" id="millisecondsToggle" />
+        </label>
+        <label class="toggle-row">
+          <span>Ambient rörelse</span>
+          <input type="checkbox" id="motionToggle" />
+        </label>
+      </section>
+
+      <section class="drawer-section">
+        <div class="drawer-history-header">
+          <h4>Historik</h4>
+          <button class="ghost-button" id="clearHistoryButton">Rensa</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </section>
+    </aside>
+
+    <div class="overlay hidden" id="overlay"></div>
+
+    <div class="modal hidden" id="timerModal" role="dialog" aria-modal="true" aria-labelledby="timerModalTitle">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <p class="section-kicker">Timer</p>
+            <h3 id="timerModalTitle">Ny timer</h3>
+          </div>
+          <button class="icon-button icon-button-close" id="cancelModalButton" aria-label="Stäng formulär">
+            ×
+          </button>
+        </div>
+        <form id="timerForm" class="timer-form">
+          <input type="hidden" id="timerIdInput" />
+
+          <label>
+            Namn
+            <input type="text" id="timerNameInput" name="name" maxlength="32" required />
+          </label>
+
+          <label>
+            Beskrivning
+            <input type="text" id="timerLabelInput" name="label" maxlength="48" />
+          </label>
+
+          <div class="form-grid">
+            <label>
+              Typ
+              <select id="timerTypeInput" name="type">
+                <option value="countdown">Countdown</option>
+                <option value="stopwatch">Stopwatch</option>
+              </select>
+            </label>
+
+            <label>
+              Färg
+              <select id="timerColorInput" name="color">
+                <option value="magenta">Magenta</option>
+                <option value="cyan">Cyan</option>
+                <option value="lime">Lime</option>
+                <option value="amber">Amber</option>
+                <option value="red">Röd</option>
+                <option value="yellow">Gul</option>
+                <option value="white">Vit</option>
+              </select>
+            </label>
+          </div>
+
+          <label id="durationField">
+            Tid i minuter
+            <input type="number" id="timerDurationInput" name="duration" min="1" max="720" value="10" />
+          </label>
+
+          <div class="modal-actions">
+            <button type="button" class="ghost-button" id="deleteTimerButton">Ta bort</button>
+            <button type="submit" class="primary-button">Spara timer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="focus-view hidden" id="focusView" aria-live="polite">
+      <button class="icon-button icon-button-close focus-close" id="closeFocusButton" aria-label="Stäng fokusläge">
+        ×
+      </button>
+      <div class="focus-orb" id="focusOrb"></div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
