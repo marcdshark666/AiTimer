@@ -248,18 +248,36 @@ button {
 }
 
 .timer-orb,
-.clock-orb {
+.clock-orb,
+.globe-orb {
   position: relative;
   display: flex;
   justify-content: center;
   min-height: 0;
 }
 
-.timer-orb button,
-.clock-orb .orb-shell {
+.timer-orb .orb-trigger,
+.clock-orb .orb-shell,
+.globe-orb .orb-shell {
   appearance: none;
   width: min(100%, 300px);
   aspect-ratio: 1;
+}
+
+.orb-edit-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(4, 10, 24, 0.78);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  font-size: 1.1rem;
 }
 
 .orb-shell {
@@ -333,6 +351,12 @@ button {
 .clock-shell::after {
   background: repeating-conic-gradient(from -90deg, rgba(255, 255, 255, 0.9) 0deg 1deg, transparent 1deg 6deg);
   mask: radial-gradient(circle, transparent 0 80%, black 81%);
+}
+
+.globe-shell {
+  --ring-color: #78f1ff;
+  --ring-muted: rgba(120, 241, 255, 0.08);
+  --inner-glow: rgba(120, 241, 255, 0.18);
 }
 
 .orb-content {
@@ -411,6 +435,13 @@ button {
 .clock-meta {
   font-size: 0.88rem;
   text-transform: capitalize;
+}
+
+.globe-canvas {
+  width: 78%;
+  max-width: 230px;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 0 28px rgba(120, 241, 255, 0.16));
 }
 
 .timer-orb[data-state="finished"] .orb-shell {

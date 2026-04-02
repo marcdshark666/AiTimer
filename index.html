@@ -220,9 +220,24 @@
           </div>
 
           <label id="durationField">
-            Tid i minuter
+            Bas tid i minuter
             <input type="number" id="timerDurationInput" name="duration" min="1" max="720" value="10" />
           </label>
+
+          <div class="form-grid" id="extraTimeFields">
+            <label>
+              Lägg till
+              <input type="number" id="extraTimeInput" name="extraTime" min="0" value="0" />
+            </label>
+
+            <label>
+              Enhet
+              <select id="extraTimeUnitInput" name="extraTimeUnit">
+                <option value="minutes">Minuter</option>
+                <option value="hours">Timmar</option>
+              </select>
+            </label>
+          </div>
 
           <div class="modal-actions">
             <button type="button" class="ghost-button" id="deleteTimerButton">Ta bort</button>

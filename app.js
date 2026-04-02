@@ -1,4 +1,4 @@
-﻿const STORAGE_KEY = "aitimer-free-v2";
+﻿const STORAGE_KEY = "aitimer-free-v3";
 const HISTORY_LIMIT = 12;
 
 const COLOR_THEMES = {
@@ -99,6 +99,8 @@ const dom = {
   timerTypeInput: document.getElementById("timerTypeInput"),
   timerColorInput: document.getElementById("timerColorInput"),
   timerDurationInput: document.getElementById("timerDurationInput"),
+  extraTimeInput: document.getElementById("extraTimeInput"),
+  extraTimeUnitInput: document.getElementById("extraTimeUnitInput"),
   durationField: document.getElementById("durationField"),
   soundToggle: document.getElementById("soundToggle"),
   millisecondsToggle: document.getElementById("millisecondsToggle"),
@@ -112,16 +114,51 @@ const dom = {
 let state = loadState();
 let isFocusOpen = false;
 let speechRecognition = null;
+let locationState = {
+  lat: 52.2297,
+  lon: 21.0122,
+  label: "Approximerad plats",
+  precise: false
+};
 
 ensureSelectedTimer();
 renderAll();
 window.setInterval(tick, 100);
+requestUserLocation();
 
 function createId() {
   if (window.crypto && typeof window.crypto.randomUUID === "function") {
     return window.crypto.randomUUID();
   }
   return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function requestUserLocation() {
+  if (!navigator.geolocation) {
+    locationState.label = "Plats ej tillgänglig";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      locationState = {
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+        label: "Din position",
+        precise: true
+      };
+      renderAll();
+    },
+    () => {
+      locationState.label = "Plats approximerad";
+      renderAll();
+    },
+    {
+      enableHighAccuracy: false,
+      timeout: 5000,
+      maximumAge: 15 * 60 * 1000
+    }
+  );
 }
 
 function loadState() {
@@ -311,11 +348,9 @@ function renderAll() {
 
 function renderBoard() {
   const now = Date.now();
-  const elements = [renderClockOrb(now)];
+  const elements = [renderClockOrb(now), renderGlobeOrb(now)];
 
-  if (!state.timers.length) {
-    elements.push(renderEmptyBoardCard());
-  } else {
+  if (state.timers.length) {
     elements.push(...state.timers.map((timer) => renderTimerOrb(timer, now)));
   }
 
@@ -378,6 +413,144 @@ function renderEmptyBoardCard() {
   return card;
 }
 
+function renderGlobeOrb(now) {
+  const wrapper = document.createElement("article");
+  wrapper.className = "globe-orb";
+
+  const shell = createOrbShell({ color: "cyan", progress: 1, className: "globe-shell" });
+  shell.innerHTML = `
+    <div class="orb-content">
+      <canvas class="globe-canvas" width="320" height="320" aria-label="Roterande jordglob"></canvas>
+      <div class="orb-rule"></div>
+      <div class="orb-title">Hologram Globe</div>
+      <p class="orb-meta">${escapeHtml(locationState.label)}</p>
+    </div>
+  `;
+
+  const canvas = shell.querySelector(".globe-canvas");
+  if (canvas) {
+    drawGlobe(canvas, now);
+  }
+
+  wrapper.appendChild(shell);
+  return wrapper;
+}
+
+function drawGlobe(canvas, now) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return;
+  }
+
+  const width = canvas.width;
+  const height = canvas.height;
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = Math.min(width, height) * 0.34;
+  const rotation = now / 6000;
+
+  ctx.clearRect(0, 0, width, height);
+
+  const glow = ctx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius * 1.4);
+  glow.addColorStop(0, "rgba(96, 246, 255, 0.22)");
+  glow.addColorStop(1, "rgba(96, 246, 255, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius * 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(123, 241, 255, 0.3)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  for (let lat = -60; lat <= 60; lat += 30) {
+    drawLatitude(ctx, cx, cy, radius, lat, rotation);
+  }
+
+  for (let lon = 0; lon < 180; lon += 30) {
+    drawLongitude(ctx, cx, cy, radius, lon, rotation);
+  }
+
+  drawLocationDot(ctx, cx, cy, radius, rotation);
+}
+
+function projectPoint(latDeg, lonDeg, rotation) {
+  const lat = (latDeg * Math.PI) / 180;
+  const lon = (lonDeg * Math.PI) / 180;
+  const x = Math.cos(lat) * Math.cos(lon);
+  const y = Math.sin(lat);
+  const z = Math.cos(lat) * Math.sin(lon);
+
+  return {
+    x: x * Math.cos(rotation) + z * Math.sin(rotation),
+    y,
+    z: -x * Math.sin(rotation) + z * Math.cos(rotation)
+  };
+}
+
+function drawLatitude(ctx, cx, cy, radius, lat, rotation) {
+  ctx.beginPath();
+  let started = false;
+  for (let lon = -180; lon <= 180; lon += 6) {
+    const point = projectPoint(lat, lon, rotation);
+    if (point.z < -0.35) {
+      started = false;
+      continue;
+    }
+    const x = cx + point.x * radius;
+    const y = cy - point.y * radius;
+    if (!started) {
+      ctx.moveTo(x, y);
+      started = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.strokeStyle = "rgba(120, 241, 255, 0.26)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawLongitude(ctx, cx, cy, radius, lon, rotation) {
+  ctx.beginPath();
+  let started = false;
+  for (let lat = -90; lat <= 90; lat += 6) {
+    const point = projectPoint(lat, lon, rotation);
+    if (point.z < -0.35) {
+      started = false;
+      continue;
+    }
+    const x = cx + point.x * radius;
+    const y = cy - point.y * radius;
+    if (!started) {
+      ctx.moveTo(x, y);
+      started = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.strokeStyle = "rgba(120, 241, 255, 0.22)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawLocationDot(ctx, cx, cy, radius, rotation) {
+  const point = projectPoint(locationState.lat, locationState.lon, rotation);
+  const x = cx + point.x * radius;
+  const y = cy - point.y * radius;
+  const alpha = point.z >= 0 ? 0.95 : 0.38;
+
+  ctx.fillStyle = `rgba(255, 58, 58, ${alpha})`;
+  ctx.shadowColor = "rgba(255, 58, 58, 0.9)";
+  ctx.shadowBlur = 16;
+  ctx.beginPath();
+  ctx.arc(x, y, point.z >= 0 ? 6 : 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
 function renderTimerOrb(timer, now) {
   const theme = COLOR_THEMES[timer.color];
   const wrapper = document.createElement("article");
@@ -387,6 +560,7 @@ function renderTimerOrb(timer, now) {
 
   const button = document.createElement("button");
   button.type = "button";
+  button.className = "orb-trigger";
   button.setAttribute("aria-label", `Välj timer ${timer.name}`);
 
   const shell = createOrbShell({
@@ -414,7 +588,18 @@ function renderTimerOrb(timer, now) {
   });
   button.addEventListener("dblclick", () => toggleTimer(timer.id));
 
+  const editButton = document.createElement("button");
+  editButton.type = "button";
+  editButton.className = "orb-edit-button";
+  editButton.setAttribute("aria-label", `Redigera ${timer.name}`);
+  editButton.textContent = "✎";
+  editButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openModal(timer.id);
+  });
+
   wrapper.appendChild(button);
+  wrapper.appendChild(editButton);
   return wrapper;
 }
 
@@ -966,6 +1151,7 @@ function duplicateTimer(timerId) {
 function removeTimer(timerId) {
   state.timers = state.timers.filter((timer) => timer.id !== timerId);
   ensureSelectedTimer();
+  state.activeProfileId = null;
   saveState();
   renderAll();
 }
@@ -1229,6 +1415,8 @@ function openModal(timerId = null) {
   dom.timerTypeInput.value = timer?.type || "countdown";
   dom.timerColorInput.value = timer?.color || "magenta";
   dom.timerDurationInput.value = timer ? Math.max(Math.round((timer.durationMs || 600000) / 60000), 1) : 10;
+  dom.extraTimeInput.value = 0;
+  dom.extraTimeUnitInput.value = "minutes";
   syncDurationVisibility();
   dom.overlay.classList.remove("hidden");
   dom.timerModal.classList.remove("hidden");
@@ -1242,6 +1430,7 @@ function closeModal() {
 
 function syncDurationVisibility() {
   dom.durationField.classList.toggle("hidden", dom.timerTypeInput.value !== "countdown");
+  dom.extraTimeInput.closest("#extraTimeFields")?.classList.toggle("hidden", dom.timerTypeInput.value !== "countdown");
 }
 
 function openDrawer() {
@@ -1352,8 +1541,20 @@ dom.timerForm.addEventListener("submit", (event) => {
 
   const id = dom.timerIdInput.value || createId();
   const type = dom.timerTypeInput.value === "stopwatch" ? "stopwatch" : "countdown";
-  const durationMs = Math.max(Number(dom.timerDurationInput.value) || 10, 1) * 60 * 1000;
+  const baseDurationMs = Math.max(Number(dom.timerDurationInput.value) || 10, 1) * 60 * 1000;
+  const extraValue = Math.max(Number(dom.extraTimeInput.value) || 0, 0);
+  const extraUnit = dom.extraTimeUnitInput.value === "hours" ? "hours" : "minutes";
+  const extraMs = extraValue * (extraUnit === "hours" ? 60 * 60 * 1000 : 60 * 1000);
   const existing = state.timers.find((timer) => timer.id === id);
+  const now = Date.now();
+  const existingCurrentMs = existing ? getRuntimeMs(existing, now) : 0;
+  let durationMs = type === "countdown" ? baseDurationMs + extraMs : 0;
+  let remainingMs = type === "countdown" ? durationMs : 0;
+
+  if (existing && type === "countdown" && extraMs > 0) {
+    remainingMs = Math.max(existingCurrentMs + extraMs, 60 * 1000);
+    durationMs = Math.max(durationMs, remainingMs);
+  }
 
   const timer = createTimer({
     id,
@@ -1362,10 +1563,22 @@ dom.timerForm.addEventListener("submit", (event) => {
     type,
     color: dom.timerColorInput.value,
     durationMs,
-    remainingMs: type === "countdown" ? durationMs : 0
+    remainingMs
   });
 
   if (existing) {
+    if (type === "countdown" && existing.isRunning) {
+      timer.isRunning = true;
+      timer.endAt = now + remainingMs;
+    }
+    if (type === "stopwatch" && existing.type === "stopwatch") {
+      timer.elapsedMs = existingCurrentMs;
+      if (existing.isRunning) {
+        timer.isRunning = true;
+        timer.startedAt = now - existingCurrentMs;
+      }
+    }
+
     const index = state.timers.findIndex((entry) => entry.id === id);
     state.timers[index] = { ...timer, completedCount: existing.completedCount };
   } else {
