@@ -70,6 +70,106 @@ const PROFESSIONAL_PROFILES = [
   }
 ];
 
+const CONTINENT_BLOBS = [
+  { lat: 52, lon: -105, rx: 34, ry: 20 },
+  { lat: 25, lon: -95, rx: 26, ry: 16 },
+  { lat: -18, lon: -60, rx: 20, ry: 28 },
+  { lat: 6, lon: 20, rx: 20, ry: 30 },
+  { lat: 46, lon: 14, rx: 16, ry: 10 },
+  { lat: 52, lon: 78, rx: 52, ry: 22 },
+  { lat: 23, lon: 90, rx: 18, ry: 12 },
+  { lat: -24, lon: 133, rx: 20, ry: 14 },
+  { lat: 74, lon: -40, rx: 12, ry: 8 },
+  { lat: -42, lon: 172, rx: 8, ry: 6 }
+];
+
+const UI_TEXT = {
+  sv: {
+    liveBoard: "Live board",
+    saveProfile: "Spara profil",
+    resetBoard: "Reset board",
+    newTimer: "Ny timer",
+    profileSaved: "profil sparad",
+    aiCreated: "skapades från AI-prompten.",
+    aiNoTimers: "Jag hittade inga tydliga timers. Prova till exempel: besök 20 min, labsvar 10 min, paus 5 min eller alarm 07:30.",
+    aiListening: "Lyssnar nu. Beskriv timers, alarm eller stopwatch.",
+    aiSpeechCaptured: "Röst fångad. Klicka på Skapa med AI för att bygga elementen.",
+    aiSpeechUnsupported: "Röststyrning stöds inte i den här webbläsaren. Skriv prompten i stället.",
+    aiSpeechError: "Kunde inte läsa mikrofonen. Kontrollera tillstånd och försök igen.",
+    aiReady: "Redo att skapa timers från text eller röst.",
+    alarmReady: "Alarm redo",
+    alarmActive: "Alarm bevakar tiden",
+    alarmFinished: "Alarm utlöst",
+    alarmDescription: "Alarmet väntar på att tiden ska nås. Perfekt för påminnelser och fasta stoppunkter.",
+    countdownDescriptionRunning: "Den här countdownen rullar live. Du kan lägga till minuter i farten eller öppna fokusläge för en ren fullscreen-visning.",
+    countdownDescriptionFinished: "Timern har gått i mål. Återställ för att köra samma intervall igen eller spara upplägget som profil.",
+    countdownDescriptionIdle: "Timern väntar i standby. Justera tiden, byt färg eller spara hela boarden som en professionell profil.",
+    stopwatchDescriptionRunning: "Stopwatchen mäter aktivt. Perfekt för öppna arbetsflöden där sluttiden inte är bestämd från start.",
+    stopwatchDescriptionIdle: "Stopwatchen är redo att starta. Bra när du vill mäta verklig tidsåtgång utan förinställd sluttid.",
+    done: "Klar",
+    running: "Kör",
+    ready: "Redo",
+    paused: "Pausad",
+    active: "Aktiv",
+    measuringLive: "Mäter live",
+    pressStart: "Tryck start",
+    readyForRestart: "Redo för ny start",
+    timeLeft: "Kvar",
+    sunUp: "Sol uppe",
+    sunDown: "Sol nere",
+    globeTitle: "Hologram Globe",
+    liveClock: "Live clock",
+    board: "Board",
+    mode: "Läge",
+    profile: "Profil",
+    saved: "Sparad",
+    custom: "Custom",
+    openLibrary: "Profiler"
+  },
+  en: {
+    liveBoard: "Live board",
+    saveProfile: "Save profile",
+    resetBoard: "Reset board",
+    newTimer: "New timer",
+    profileSaved: "profile saved",
+    aiCreated: "created from the AI prompt.",
+    aiNoTimers: "I couldn't find any clear timers. Try for example: visit 20 min, lab reply 10 min, break 5 min or alarm 07:30.",
+    aiListening: "Listening now. Describe timers, alarms, or a stopwatch.",
+    aiSpeechCaptured: "Voice captured. Click Create with AI to build the items.",
+    aiSpeechUnsupported: "Voice input is not supported in this browser. Type the prompt instead.",
+    aiSpeechError: "Could not access the microphone. Check permission and try again.",
+    aiReady: "Ready to create timers from text or voice.",
+    alarmReady: "Alarm ready",
+    alarmActive: "Alarm is monitoring time",
+    alarmFinished: "Alarm triggered",
+    alarmDescription: "The alarm is waiting for its trigger time. Great for reminders and fixed stop points.",
+    countdownDescriptionRunning: "This countdown is running live. You can add minutes on the fly or open focus mode for a clean fullscreen view.",
+    countdownDescriptionFinished: "The timer has finished. Reset it to run the same interval again or save the setup as a profile.",
+    countdownDescriptionIdle: "The timer is standing by. Adjust the time, change the color, or save the whole board as a professional profile.",
+    stopwatchDescriptionRunning: "The stopwatch is actively measuring. Perfect for open workflows where the end time is not fixed.",
+    stopwatchDescriptionIdle: "The stopwatch is ready to start. Useful when you want to measure actual time without a preset finish.",
+    done: "Done",
+    running: "Running",
+    ready: "Ready",
+    paused: "Paused",
+    active: "Active",
+    measuringLive: "Measuring live",
+    pressStart: "Press start",
+    readyForRestart: "Ready for restart",
+    timeLeft: "Left",
+    sunUp: "Sun up",
+    sunDown: "Sun down",
+    globeTitle: "Hologram Globe",
+    liveClock: "Live clock",
+    board: "Board",
+    mode: "Mode",
+    profile: "Profile",
+    saved: "Saved",
+    custom: "Custom",
+    openLibrary: "Profiles"
+  }
+};
+
 const dom = {
   timerBoard: document.getElementById("timerBoard"),
   selectedPanel: document.getElementById("selectedPanel"),
@@ -81,6 +181,9 @@ const dom = {
   menuButton: document.getElementById("menuButton"),
   closeDrawerButton: document.getElementById("closeDrawerButton"),
   newTimerButton: document.getElementById("newTimerButton"),
+  langSvButton: document.getElementById("langSvButton"),
+  langEnButton: document.getElementById("langEnButton"),
+  googleTranslateButton: document.getElementById("googleTranslateButton"),
   saveProfileButton: document.getElementById("saveProfileButton"),
   resetBoardButton: document.getElementById("resetBoardButton"),
   clearProfilesButton: document.getElementById("clearProfilesButton"),
@@ -121,7 +224,12 @@ let locationState = {
   precise: false
 };
 
+if (dom.aiStatus) {
+  dom.aiStatus.dataset.locked = "false";
+}
+
 ensureSelectedTimer();
+applyStaticTranslations();
 renderAll();
 window.setInterval(tick, 100);
 requestUserLocation();
@@ -131,6 +239,86 @@ function createId() {
     return window.crypto.randomUUID();
   }
   return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function t(key) {
+  const lang = state.settings.language === "en" ? "en" : "sv";
+  return UI_TEXT[lang][key] || UI_TEXT.sv[key] || key;
+}
+
+function setLanguage(language) {
+  state.settings.language = language === "en" ? "en" : "sv";
+  saveState();
+  applyStaticTranslations();
+  renderAll();
+}
+
+function openGoogleTranslate() {
+  const currentUrl = window.location.href;
+  const targetLang = state.settings.language === "en" ? "sv" : "en";
+  const translatedUrl = `https://translate.google.com/translate?sl=auto&tl=${targetLang}&u=${encodeURIComponent(currentUrl)}`;
+  window.open(translatedUrl, "_blank", "noopener,noreferrer");
+}
+
+function applyStaticTranslations() {
+  document.documentElement.lang = state.settings.language === "en" ? "en" : "sv";
+
+  const brandEyebrow = document.querySelector(".brand-eyebrow");
+  if (brandEyebrow) {
+    brandEyebrow.textContent = state.settings.language === "en" ? "Free web version" : "Gratis webbversion";
+  }
+
+  const liveStatusLabel = document.querySelector("#liveStatus span:last-child");
+  if (liveStatusLabel) {
+    liveStatusLabel.textContent = t("liveBoard");
+  }
+
+  dom.saveProfileButton.textContent = t("saveProfile");
+  dom.resetBoardButton.textContent = t("resetBoard");
+  dom.newTimerButton.textContent = t("newTimer");
+  dom.googleTranslateButton.textContent = "Google Translate";
+  dom.generateAiButton.textContent = state.settings.language === "en" ? "Create with AI" : "Skapa med AI";
+  dom.listenAiButton.textContent = state.settings.language === "en" ? "Listen" : "Lyssna";
+
+  const heroKicker = document.querySelector(".hero-strip .section-kicker");
+  if (heroKicker) {
+    heroKicker.textContent = state.settings.language === "en" ? "Futuristic timer board" : "Futuristisk timer-board";
+  }
+
+  const heroTitle = document.querySelector(".hero-strip h2");
+  if (heroTitle) {
+    heroTitle.textContent =
+      state.settings.language === "en"
+        ? "No subscription. Full control. Local in the browser."
+        : "Noll abonnemang. Full kontroll. Lokalt i webbläsaren.";
+  }
+
+  const heroCopy = document.querySelector(".hero-copy");
+  if (heroCopy) {
+    heroCopy.textContent =
+      state.settings.language === "en"
+        ? "Built for fast workflows with neon rings, presets, focus mode, history, and local control in your browser."
+        : "Byggd för snabba arbetsflöden med tydliga neonringar, svenska presets, fokusläge och historik direkt i din browser.";
+  }
+
+  const aiSectionTitle = Array.from(document.querySelectorAll(".drawer-section h4")).find((item) =>
+    item.textContent.includes("AI") || item.textContent.includes("Studio")
+  );
+  if (aiSectionTitle) {
+    aiSectionTitle.textContent = "AI Studio";
+  }
+
+  const aiPromptLabel = document.querySelector('label[for="aiPromptInput"], label .section-kicker');
+  if (dom.aiPromptInput) {
+    dom.aiPromptInput.placeholder =
+      state.settings.language === "en"
+        ? "Example: create visit 20 min, lab reply 10 min, break 5 min, alarm 07:30 and a stopwatch for validation"
+        : "Exempel: skapa besök 20 min, labsvar 10 min, paus 5 min, alarm 07:30 och en stopwatch för vidimering";
+  }
+
+  if (dom.aiStatus && (!dom.aiStatus.dataset.locked || dom.aiStatus.dataset.locked === "false")) {
+    dom.aiStatus.textContent = t("aiReady");
+  }
 }
 
 function requestUserLocation() {
@@ -167,7 +355,8 @@ function loadState() {
     settings: {
       soundEnabled: true,
       showMilliseconds: true,
-      ambientMotion: true
+      ambientMotion: true,
+      language: "sv"
     },
     timers: [],
     history: [],
@@ -241,46 +430,50 @@ function normalizeProfileTimerSeed(timer) {
 }
 
 function createTimer(seed) {
-  return normalizeTimer({
-    id: seed.id || createId(),
-    name: seed.name,
-    label: seed.label || "",
-    type: seed.type || "countdown",
-    color: seed.color || "cyan",
-    durationMs: Math.max(Number(seed.durationMs) || 0, seed.type === "countdown" ? 60 * 1000 : 0),
-    remainingMs: seed.type === "countdown" ? Math.max(Number(seed.remainingMs ?? seed.durationMs) || 0, 0) : 0,
-    elapsedMs: Math.max(Number(seed.elapsedMs) || 0, 0),
-    isRunning: Boolean(seed.isRunning),
-    endAt: seed.endAt || null,
-    startedAt: seed.startedAt || null,
-    completedCount: Number(seed.completedCount) || 0
-  });
-}
+  const isCountdownLike = seed.type === "countdown" || seed.type === "alarm";
+    return normalizeTimer({
+      id: seed.id || createId(),
+      name: seed.name,
+      label: seed.label || "",
+      type: seed.type || "countdown",
+      color: seed.color || "cyan",
+      durationMs: Math.max(Number(seed.durationMs) || 0, isCountdownLike ? 60 * 1000 : 0),
+      remainingMs: isCountdownLike ? Math.max(Number(seed.remainingMs ?? seed.durationMs) || 0, 0) : 0,
+      elapsedMs: Math.max(Number(seed.elapsedMs) || 0, 0),
+      isRunning: Boolean(seed.isRunning),
+      endAt: seed.endAt || null,
+      alarmAt: seed.alarmAt || null,
+      startedAt: seed.startedAt || null,
+      completedCount: Number(seed.completedCount) || 0
+    });
+  }
 
 function normalizeTimer(timer) {
   if (!timer || !timer.name) {
     return null;
   }
 
-  const type = timer.type === "stopwatch" ? "stopwatch" : "countdown";
-  const normalized = {
-    id: timer.id || createId(),
-    name: String(timer.name).slice(0, 32),
-    label: String(timer.label || "").slice(0, 48),
-    type,
-    color: COLOR_THEMES[timer.color] ? timer.color : "cyan",
-    durationMs: type === "countdown" ? Math.max(Number(timer.durationMs) || 60 * 1000, 60 * 1000) : 0,
-    remainingMs: type === "countdown" ? Math.max(Number(timer.remainingMs ?? timer.durationMs) || 0, 0) : 0,
-    elapsedMs: type === "stopwatch" ? Math.max(Number(timer.elapsedMs) || 0, 0) : 0,
-    isRunning: Boolean(timer.isRunning),
-    endAt: timer.endAt || null,
-    startedAt: timer.startedAt || null,
-    completedCount: Number(timer.completedCount) || 0
-  };
+    const type = timer.type === "stopwatch" ? "stopwatch" : timer.type === "alarm" ? "alarm" : "countdown";
+    const isCountdownLike = type === "countdown" || type === "alarm";
+    const normalized = {
+      id: timer.id || createId(),
+      name: String(timer.name).slice(0, 32),
+      label: String(timer.label || "").slice(0, 48),
+      type,
+      color: COLOR_THEMES[timer.color] ? timer.color : "cyan",
+      durationMs: isCountdownLike ? Math.max(Number(timer.durationMs) || 60 * 1000, 60 * 1000) : 0,
+      remainingMs: isCountdownLike ? Math.max(Number(timer.remainingMs ?? timer.durationMs) || 0, 0) : 0,
+      elapsedMs: type === "stopwatch" ? Math.max(Number(timer.elapsedMs) || 0, 0) : 0,
+      isRunning: Boolean(timer.isRunning),
+      endAt: timer.endAt || null,
+      alarmAt: timer.alarmAt || null,
+      startedAt: timer.startedAt || null,
+      completedCount: Number(timer.completedCount) || 0
+    };
 
-  if (normalized.type === "countdown" && normalized.isRunning && !normalized.endAt) {
-    normalized.isRunning = false;
-  }
+    if ((normalized.type === "countdown" || normalized.type === "alarm") && normalized.isRunning && !normalized.endAt && !normalized.alarmAt) {
+      normalized.isRunning = false;
+    }
 
   if (normalized.type === "stopwatch" && normalized.isRunning && !normalized.startedAt) {
     normalized.isRunning = false;
@@ -310,9 +503,12 @@ function tick() {
   const now = Date.now();
 
   state.timers.forEach((timer) => {
-    if (timer.type === "countdown" && timer.isRunning && timer.endAt && timer.endAt <= now) {
+    const isCountdownLike = timer.type === "countdown" || timer.type === "alarm";
+    const finishAt = timer.type === "alarm" && timer.alarmAt ? timer.alarmAt : timer.endAt;
+    if (isCountdownLike && timer.isRunning && finishAt && finishAt <= now) {
       timer.isRunning = false;
       timer.endAt = null;
+      timer.alarmAt = timer.type === "alarm" ? null : timer.alarmAt;
       timer.remainingMs = 0;
       timer.completedCount += 1;
       state.history.unshift({
@@ -335,6 +531,7 @@ function tick() {
 }
 
 function renderAll() {
+  applyStaticTranslations();
   syncSettingControls();
   applyMotionSetting();
   renderBoard();
@@ -367,7 +564,7 @@ function renderClockOrb(now) {
     <div class="orb-content">
       <div class="${timeClassName(time)}">${time.main}<small>${time.trail}</small></div>
       <div class="orb-rule"></div>
-      <div class="orb-title">Live clock</div>
+      <div class="orb-title">${t("liveClock")}</div>
       <p class="clock-meta">${new Intl.DateTimeFormat("sv-SE", {
         weekday: "long",
         day: "numeric",
@@ -416,16 +613,17 @@ function renderEmptyBoardCard() {
 function renderGlobeOrb(now) {
   const wrapper = document.createElement("article");
   wrapper.className = "globe-orb";
+  const sunUp = isSunUpAtLocation(locationState.lat, locationState.lon, now);
 
   const shell = createOrbShell({ color: "cyan", progress: 1, className: "globe-shell" });
   shell.innerHTML = `
-    <div class="orb-content">
-      <canvas class="globe-canvas" width="320" height="320" aria-label="Roterande jordglob"></canvas>
-      <div class="orb-rule"></div>
-      <div class="orb-title">Hologram Globe</div>
-      <p class="orb-meta">${escapeHtml(locationState.label)}</p>
-    </div>
-  `;
+      <div class="orb-content">
+        <canvas class="globe-canvas" width="320" height="320" aria-label="Roterande jordglob"></canvas>
+        <div class="orb-rule"></div>
+        <div class="orb-title">${t("globeTitle")}</div>
+        <p class="orb-meta">${escapeHtml(locationState.label)} • ${sunUp ? t("sunUp") : t("sunDown")}</p>
+      </div>
+    `;
 
   const canvas = shell.querySelector(".globe-canvas");
   if (canvas) {
@@ -459,6 +657,24 @@ function drawGlobe(canvas, now) {
   ctx.arc(cx, cy, radius * 1.5, 0, Math.PI * 2);
   ctx.fill();
 
+  const sphereFill = ctx.createRadialGradient(cx - radius * 0.2, cy - radius * 0.25, radius * 0.15, cx, cy, radius);
+  sphereFill.addColorStop(0, "rgba(118, 245, 255, 0.16)");
+  sphereFill.addColorStop(0.55, "rgba(18, 30, 52, 0.92)");
+  sphereFill.addColorStop(1, "rgba(5, 10, 22, 0.98)");
+  ctx.fillStyle = sphereFill;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.clip();
+
+  drawDayNightShade(ctx, cx, cy, radius, rotation, now);
+  drawContinents(ctx, cx, cy, radius, rotation, now);
+  ctx.restore();
+
   ctx.strokeStyle = "rgba(123, 241, 255, 0.3)";
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -488,6 +704,93 @@ function projectPoint(latDeg, lonDeg, rotation) {
     y,
     z: -x * Math.sin(rotation) + z * Math.cos(rotation)
   };
+}
+
+function getSunPosition(now) {
+  const date = new Date(now);
+  const utcHours =
+    date.getUTCHours() +
+    date.getUTCMinutes() / 60 +
+    date.getUTCSeconds() / 3600;
+  const startOfYear = Date.UTC(date.getUTCFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - startOfYear) / 86400000);
+  const declination = 23.44 * Math.sin(((2 * Math.PI) / 365) * (dayOfYear - 81));
+  const subsolarLon = 180 - utcHours * 15;
+
+  return {
+    lat: declination,
+    lon: ((subsolarLon + 540) % 360) - 180
+  };
+}
+
+function daylightFactor(latDeg, lonDeg, now) {
+  const sun = getSunPosition(now);
+  const lat = (latDeg * Math.PI) / 180;
+  const lon = (lonDeg * Math.PI) / 180;
+  const sunLat = (sun.lat * Math.PI) / 180;
+  const sunLon = (sun.lon * Math.PI) / 180;
+  return (
+    Math.sin(lat) * Math.sin(sunLat) +
+    Math.cos(lat) * Math.cos(sunLat) * Math.cos(lon - sunLon)
+  );
+}
+
+function isSunUpAtLocation(latDeg, lonDeg, now) {
+  return daylightFactor(latDeg, lonDeg, now) > 0;
+}
+
+function drawDayNightShade(ctx, cx, cy, radius, rotation, now) {
+  const sun = getSunPosition(now);
+  const projectedSun = projectPoint(sun.lat, sun.lon, rotation);
+  const screenSunY = -projectedSun.y;
+  const gradient = ctx.createLinearGradient(
+    cx - projectedSun.x * radius * 1.2,
+    cy - screenSunY * radius * 1.2,
+    cx + projectedSun.x * radius * 1.2,
+    cy + screenSunY * radius * 1.2
+  );
+
+  gradient.addColorStop(0, "rgba(3, 8, 22, 0.78)");
+  gradient.addColorStop(0.42, "rgba(5, 12, 28, 0.52)");
+  gradient.addColorStop(0.62, "rgba(12, 28, 42, 0.16)");
+  gradient.addColorStop(1, "rgba(112, 247, 255, 0.08)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(cx - radius - 20, cy - radius - 20, radius * 2 + 40, radius * 2 + 40);
+}
+
+function drawContinents(ctx, cx, cy, radius, rotation, now) {
+  CONTINENT_BLOBS.forEach((blob) => {
+    for (let lat = blob.lat - blob.ry; lat <= blob.lat + blob.ry; lat += 4) {
+      for (let lon = blob.lon - blob.rx; lon <= blob.lon + blob.rx; lon += 4) {
+        const ellipse =
+          ((lat - blob.lat) * (lat - blob.lat)) / (blob.ry * blob.ry) +
+          ((lon - blob.lon) * (lon - blob.lon)) / (blob.rx * blob.rx);
+
+        if (ellipse > 1) {
+          continue;
+        }
+
+        const point = projectPoint(lat, lon, rotation);
+        if (point.z < -0.18) {
+          continue;
+        }
+
+        const light = daylightFactor(lat, lon, now);
+        const x = cx + point.x * radius;
+        const y = cy - point.y * radius;
+        const alpha = light > 0 ? 0.46 : 0.18;
+        const size = light > 0 ? 2.6 : 2.1;
+
+        ctx.fillStyle =
+          light > 0
+            ? `rgba(116, 245, 255, ${alpha})`
+            : `rgba(42, 88, 108, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  });
 }
 
 function drawLatitude(ctx, cx, cy, radius, lat, rotation) {
@@ -625,19 +928,19 @@ function renderSelectedPanel() {
       <div class="selected-hero">
         <div class="panel-heading">
           <p class="section-kicker">Boardstatus</p>
-          <h3>Ingen profil aktiv</h3>
-        </div>
+            <h3>Ingen profil aktiv</h3>
+          </div>
         <p class="selected-copy">
           Börja med en professionell profil från biblioteket eller skapa en egen timer manuellt.
           När du är nöjd kan du spara upplägget som en egen profil.
         </p>
-        <div class="selected-actions-secondary">
-          <button class="primary-button" data-panel-action="open-library">Profiler</button>
-          <button class="ghost-button" data-panel-action="new-timer">Ny timer</button>
-          <button class="ghost-button" data-panel-action="reset-board">Reset board</button>
+          <div class="selected-actions-secondary">
+            <button class="primary-button" data-panel-action="open-library">${t("openLibrary")}</button>
+            <button class="ghost-button" data-panel-action="new-timer">${t("newTimer")}</button>
+            <button class="ghost-button" data-panel-action="reset-board">${t("resetBoard")}</button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
 
     dom.selectedPanel.querySelectorAll("[data-panel-action]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -661,8 +964,8 @@ function renderSelectedPanel() {
   const duration = timer.type === "countdown" ? timer.durationMs : runtime;
   const time = formatTimerDisplay(timer, now);
   const theme = COLOR_THEMES[timer.color];
-  const profileLabel = activeProfile ? activeProfile.name : "Anpassad board";
-  const profileTypeLabel = activeProfile ? (activeProfile.builtIn ? "Profil" : "Sparad") : "Custom";
+  const profileLabel = activeProfile ? activeProfile.name : (state.settings.language === "en" ? "Custom board" : "Anpassad board");
+  const profileTypeLabel = activeProfile ? (activeProfile.builtIn ? t("profile") : t("saved")) : t("custom");
 
   dom.selectedPanel.innerHTML = `
     <div class="selected-hero">
@@ -671,7 +974,7 @@ function renderSelectedPanel() {
           <p class="section-kicker">Vald timer</p>
           <h3>${escapeHtml(timer.name)}</h3>
         </div>
-        <span class="selected-tag">${timer.type === "countdown" ? "Countdown" : "Stopwatch"}</span>
+        <span class="selected-tag">${timer.type === "alarm" ? "Alarm" : timer.type === "countdown" ? "Countdown" : "Stopwatch"}</span>
       </div>
 
       <div class="selected-preview">
@@ -688,14 +991,14 @@ function renderSelectedPanel() {
 
       <div class="selected-stats">
         <div class="stat-chip"><span>Status</span><strong>${timerStatusLabel(timer, now)}</strong></div>
-        <div class="stat-chip"><span>Board</span><strong>${escapeHtml(profileLabel)}</strong></div>
-        <div class="stat-chip"><span>Tid</span><strong>${formatLongDuration(duration)}</strong></div>
-        <div class="stat-chip"><span>Läge</span><strong>${profileTypeLabel}</strong></div>
+        <div class="stat-chip"><span>${t("board")}</span><strong>${escapeHtml(profileLabel)}</strong></div>
+        <div class="stat-chip"><span>${state.settings.language === "en" ? "Time" : "Tid"}</span><strong>${formatLongDuration(duration)}</strong></div>
+        <div class="stat-chip"><span>${t("mode")}</span><strong>${profileTypeLabel}</strong></div>
       </div>
 
       <div class="timer-actions">
-        <button class="action-button action-button-primary" data-action="toggle">${timer.isRunning ? "Pausa" : "Starta"}</button>
-        <button class="action-button" data-action="reset">Återställ</button>
+        <button class="action-button action-button-primary" data-action="toggle">${timer.isRunning ? (state.settings.language === "en" ? "Pause" : "Pausa") : (state.settings.language === "en" ? "Start" : "Starta")}</button>
+        <button class="action-button" data-action="reset">${state.settings.language === "en" ? "Reset" : "Återställ"}</button>
       </div>
 
       <div class="mini-action-row">
@@ -705,15 +1008,15 @@ function renderSelectedPanel() {
       </div>
 
       <div class="mini-action-row">
-        <button class="mini-action" data-action="edit">Redigera</button>
-        <button class="mini-action" data-action="duplicate">Duplicera</button>
-        <button class="mini-action" data-action="remove">Ta bort</button>
+        <button class="mini-action" data-action="edit">${state.settings.language === "en" ? "Edit" : "Redigera"}</button>
+        <button class="mini-action" data-action="duplicate">${state.settings.language === "en" ? "Duplicate" : "Duplicera"}</button>
+        <button class="mini-action" data-action="remove">${state.settings.language === "en" ? "Remove" : "Ta bort"}</button>
       </div>
 
       <div class="selected-actions-secondary">
-        <button class="ghost-button" data-action="save-profile">Spara profil</button>
-        <button class="ghost-button" data-action="open-library">Profiler</button>
-        <button class="ghost-button" data-action="reset-board">Reset board</button>
+        <button class="ghost-button" data-action="save-profile">${t("saveProfile")}</button>
+        <button class="ghost-button" data-action="open-library">${t("openLibrary")}</button>
+        <button class="ghost-button" data-action="reset-board">${t("resetBoard")}</button>
       </div>
     </div>
   `;
@@ -737,7 +1040,7 @@ function renderProfileGrid() {
       </div>
       <p class="profile-description">${escapeHtml(profile.description)}</p>
       <div class="profile-actions">
-        <button class="primary-button" data-profile-id="${profile.id}">Ladda profil</button>
+        <button class="primary-button" data-profile-id="${profile.id}">${state.settings.language === "en" ? "Load profile" : "Ladda profil"}</button>
       </div>
     `;
     card.querySelector("[data-profile-id]").addEventListener("click", () => applyProfile(profile));
@@ -749,7 +1052,7 @@ function renderProfileGrid() {
 
 function renderSavedProfiles() {
   if (!state.savedProfiles.length) {
-    dom.savedProfileList.innerHTML = '<div class="saved-profile-empty">Inga profiler sparade ännu. Bygg en board och klicka på Spara profil.</div>';
+    dom.savedProfileList.innerHTML = `<div class="saved-profile-empty">${state.settings.language === "en" ? "No saved profiles yet. Build a board and click Save profile." : "Inga profiler sparade ännu. Bygg en board och klicka på Spara profil."}</div>`;
     return;
   }
 
@@ -766,8 +1069,8 @@ function renderSavedProfiles() {
       </div>
       <p class="saved-profile-meta">${escapeHtml(profile.description)}</p>
       <div class="saved-profile-actions">
-        <button class="ghost-button" data-saved-action="apply">Ladda</button>
-        <button class="ghost-button" data-saved-action="remove">Ta bort</button>
+        <button class="ghost-button" data-saved-action="apply">${state.settings.language === "en" ? "Load" : "Ladda"}</button>
+        <button class="ghost-button" data-saved-action="remove">${state.settings.language === "en" ? "Remove" : "Ta bort"}</button>
       </div>
     `;
 
@@ -807,7 +1110,7 @@ function renderPresetGrid() {
 
 function renderHistory() {
   if (!state.history.length) {
-    dom.historyList.innerHTML = '<div class="history-empty">Ingen historik ännu. När en countdown går i mål dyker den upp här.</div>';
+    dom.historyList.innerHTML = `<div class="history-empty">${state.settings.language === "en" ? "No history yet. When a countdown or alarm finishes it will appear here." : "Ingen historik ännu. När en countdown eller alarm går i mål dyker den upp här."}</div>`;
     return;
   }
 
@@ -817,7 +1120,7 @@ function renderHistory() {
     item.innerHTML = `
       <div>
         <strong>${escapeHtml(entry.name)}</strong>
-        <p>Countdown färdig</p>
+        <p>${state.settings.language === "en" ? "Finished" : "Färdig"}</p>
       </div>
       <time datetime="${new Date(entry.completedAt).toISOString()}">${formatHistoryTime(entry.completedAt)}</time>
     `;
@@ -849,14 +1152,14 @@ function getActiveProfile() {
 }
 
 function timerState(timer, now) {
-  if (timer.type === "countdown" && getRuntimeMs(timer, now) <= 0) {
+  if ((timer.type === "countdown" || timer.type === "alarm") && getRuntimeMs(timer, now) <= 0) {
     return "finished";
   }
   return timer.isRunning ? "running" : "idle";
 }
 
 function progressForTimer(timer, now) {
-  if (timer.type === "countdown") {
+  if (timer.type === "countdown" || timer.type === "alarm") {
     const runtime = getRuntimeMs(timer, now);
     return timer.durationMs ? (timer.durationMs - runtime) / timer.durationMs : 0;
   }
@@ -864,7 +1167,10 @@ function progressForTimer(timer, now) {
 }
 
 function getRuntimeMs(timer, now) {
-  if (timer.type === "countdown") {
+  if (timer.type === "countdown" || timer.type === "alarm") {
+    if (timer.type === "alarm" && timer.isRunning && timer.alarmAt) {
+      return Math.max(0, timer.alarmAt - now);
+    }
     if (timer.isRunning && timer.endAt) {
       return Math.max(0, timer.endAt - now);
     }
@@ -878,45 +1184,64 @@ function getRuntimeMs(timer, now) {
 }
 
 function timerMeta(timer, now) {
+  if (timer.type === "alarm") {
+    const remaining = getRuntimeMs(timer, now);
+    if (remaining <= 0) {
+      return { label: t("done"), meta: t("alarmFinished") };
+    }
+    if (timer.isRunning) {
+      return { label: t("active"), meta: `${t("timeLeft")} ${formatCompactDuration(remaining)}` };
+    }
+    return { label: t("ready"), meta: t("alarmReady") };
+  }
+
   if (timer.type === "countdown") {
     const remaining = getRuntimeMs(timer, now);
     if (remaining <= 0) {
-      return { label: "Klar", meta: "Redo för ny start" };
+      return { label: t("done"), meta: t("readyForRestart") };
     }
     if (timer.isRunning) {
-      return { label: "Aktiv", meta: `Kvar ${formatCompactDuration(remaining)}` };
+      return { label: t("active"), meta: `${t("timeLeft")} ${formatCompactDuration(remaining)}` };
     }
-    return { label: "Pausad", meta: formatCompactDuration(timer.durationMs) };
+    return { label: t("paused"), meta: formatCompactDuration(timer.durationMs) };
   }
 
   if (timer.isRunning) {
-    return { label: "Aktiv", meta: "Mäter live" };
+    return { label: t("active"), meta: t("measuringLive") };
   }
-  return { label: "Redo", meta: "Tryck start" };
+  return { label: t("ready"), meta: t("pressStart") };
 }
 
 function selectedDescription(timer, now) {
+  if (timer.type === "alarm") {
+    const remaining = getRuntimeMs(timer, now);
+    if (remaining <= 0) {
+      return t("alarmFinished");
+    }
+    return t("alarmDescription");
+  }
+
   if (timer.type === "countdown") {
     const remaining = getRuntimeMs(timer, now);
     if (remaining <= 0) {
-      return "Timern har gått i mål. Återställ för att köra samma intervall igen eller spara upplägget som profil.";
+      return t("countdownDescriptionFinished");
     }
     if (timer.isRunning) {
-      return "Den här countdownen rullar live. Du kan lägga till minuter i farten eller öppna fokusläge för en ren fullscreen-visning.";
+      return t("countdownDescriptionRunning");
     }
-    return "Timern väntar i standby. Justera tiden, byt färg eller spara hela boarden som en professionell profil.";
+    return t("countdownDescriptionIdle");
   }
 
   return timer.isRunning
-    ? "Stopwatchen mäter aktivt. Perfekt för öppna arbetsflöden där sluttiden inte är bestämd från start."
-    : "Stopwatchen är redo att starta. Bra när du vill mäta verklig tidsåtgång utan förinställd sluttid.";
+    ? t("stopwatchDescriptionRunning")
+    : t("stopwatchDescriptionIdle");
 }
 
 function timerStatusLabel(timer, now) {
-  if (timer.type === "countdown" && getRuntimeMs(timer, now) <= 0) {
-    return "Klar";
+  if ((timer.type === "countdown" || timer.type === "alarm") && getRuntimeMs(timer, now) <= 0) {
+    return t("done");
   }
-  return timer.isRunning ? "Kör" : "Redo";
+  return timer.isRunning ? t("running") : t("ready");
 }
 
 function formatTimerDisplay(timer, now) {
@@ -1073,16 +1398,23 @@ function handleSelectedAction(timerId, action) {
 function toggleTimer(timerId) {
   updateTimer(timerId, (timer) => {
     const now = Date.now();
-    if (timer.type === "countdown") {
+    if (timer.type === "countdown" || timer.type === "alarm") {
       if (getRuntimeMs(timer, now) <= 0) {
         timer.remainingMs = timer.durationMs;
       }
       if (timer.isRunning) {
         timer.remainingMs = getRuntimeMs(timer, now);
         timer.endAt = null;
+        if (timer.type === "alarm") {
+          timer.alarmAt = null;
+        }
         timer.isRunning = false;
       } else {
-        timer.endAt = now + getRuntimeMs(timer, now);
+        if (timer.type === "alarm") {
+          timer.alarmAt = now + getRuntimeMs(timer, now);
+        } else {
+          timer.endAt = now + getRuntimeMs(timer, now);
+        }
         timer.isRunning = true;
       }
       return;
@@ -1103,18 +1435,21 @@ function resetTimer(timerId) {
   updateTimer(timerId, (timer) => {
     timer.isRunning = false;
     timer.endAt = null;
+    timer.alarmAt = null;
     timer.startedAt = null;
-    timer.remainingMs = timer.type === "countdown" ? timer.durationMs : 0;
+    timer.remainingMs = timer.type === "countdown" || timer.type === "alarm" ? timer.durationMs : 0;
     timer.elapsedMs = 0;
   });
 }
 
 function bumpTimer(timerId, deltaMs) {
   updateTimer(timerId, (timer) => {
-    if (timer.type !== "countdown") {
+    if (timer.type !== "countdown" && timer.type !== "alarm") {
       return;
     }
-    if (timer.isRunning && timer.endAt) {
+    if (timer.type === "alarm" && timer.alarmAt) {
+      timer.alarmAt += deltaMs;
+    } else if (timer.isRunning && timer.endAt) {
       timer.endAt += deltaMs;
     } else {
       timer.remainingMs += deltaMs;
@@ -1195,13 +1530,13 @@ function buildProfileSeedList() {
 
 function saveCurrentProfile() {
   if (!state.timers.length) {
-    window.alert("Skapa eller ladda timers först, sedan kan du spara profilen.");
+    window.alert(state.settings.language === "en" ? "Create or load timers first, then you can save the profile." : "Skapa eller ladda timers först, sedan kan du spara profilen.");
     return;
   }
 
   const existingSaved = state.savedProfiles.find((profile) => profile.id === state.activeProfileId) || null;
-  const suggestedName = existingSaved?.name || getActiveProfile()?.name || "Min profil";
-  const name = window.prompt("Namn på profil", suggestedName);
+  const suggestedName = existingSaved?.name || getActiveProfile()?.name || (state.settings.language === "en" ? "My profile" : "Min profil");
+  const name = window.prompt(state.settings.language === "en" ? "Profile name" : "Namn på profil", suggestedName);
   if (!name || !name.trim()) {
     return;
   }
@@ -1250,17 +1585,18 @@ function clearSavedProfiles() {
 }
 
 function setAiStatus(message) {
+  dom.aiStatus.dataset.locked = "true";
   dom.aiStatus.textContent = message;
 }
 
 function inferColorFromText(text) {
   const lower = text.toLowerCase();
-  if (lower.includes("paus") || lower.includes("triage")) return "red";
-  if (lower.includes("lab") || lower.includes("svar") || lower.includes("intro")) return "cyan";
-  if (lower.includes("patient") || lower.includes("nästa") || lower.includes("uppfölj")) return "magenta";
-  if (lower.includes("admin") || lower.includes("stopwatch") || lower.includes("vidimer")) return "lime";
-  if (lower.includes("möte") || lower.includes("besök")) return "yellow";
-  if (lower.includes("djup") || lower.includes("fokus")) return "white";
+  if (lower.includes("paus") || lower.includes("break") || lower.includes("triage")) return "red";
+  if (lower.includes("lab") || lower.includes("svar") || lower.includes("reply") || lower.includes("intro")) return "cyan";
+  if (lower.includes("patient") || lower.includes("nästa") || lower.includes("next") || lower.includes("uppfölj")) return "magenta";
+  if (lower.includes("admin") || lower.includes("stopwatch") || lower.includes("vidimer") || lower.includes("validation")) return "lime";
+  if (lower.includes("möte") || lower.includes("meeting") || lower.includes("besök") || lower.includes("visit")) return "yellow";
+  if (lower.includes("djup") || lower.includes("focus") || lower.includes("fokus")) return "white";
   return "amber";
 }
 
@@ -1277,9 +1613,35 @@ function parseDuration(text) {
   return amount * 60 * 1000;
 }
 
+function parseClockAlarm(text) {
+  const match = text.match(/\b(\d{1,2})[:.](\d{2})\b/);
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) {
+    return null;
+  }
+
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(hours, minutes, 0, 0);
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 1);
+  }
+
+  return {
+    alarmAt: target.getTime(),
+    durationMs: target.getTime() - now.getTime(),
+    label: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+  };
+}
+
 function cleanTimerName(text) {
   return text
-    .replace(/\b(skapa|lägg till|gör|bygg|timer|timers|en|ett)\b/gi, "")
+    .replace(/\b(skapa|lägg till|gör|bygg|timer|timers|alarm|stoppur|stopwatch|en|ett)\b/gi, "")
     .replace(/\d+\s*(tim|timmar|h|min|m|minuter|sek|sekunder|s)\b/gi, "")
     .replace(/[:.-]/g, " ")
     .replace(/\s+/g, " ")
@@ -1292,10 +1654,11 @@ function parseAiPrompt(input) {
     return [];
   }
 
-  const normalized = source
-    .replace(/\n/g, ",")
-    .replace(/\s+och\s+/gi, ",")
-    .replace(/\s+samt\s+/gi, ",");
+    const normalized = source
+      .replace(/\n/g, ",")
+      .replace(/\s+och\s+/gi, ",")
+      .replace(/\s+and\s+/gi, ",")
+      .replace(/\s+samt\s+/gi, ",");
 
   const rawSegments = normalized
     .split(/[,;]+/)
@@ -1304,11 +1667,43 @@ function parseAiPrompt(input) {
 
   const timers = [];
 
-  rawSegments.forEach((segment, index) => {
-    const lower = segment.toLowerCase();
-    if (lower.includes("stopwatch") || lower.includes("stoppur")) {
-      const name = cleanTimerName(segment) || `Stopwatch ${index + 1}`;
-      timers.push({
+    rawSegments.forEach((segment, index) => {
+      const lower = segment.toLowerCase();
+      const isAlarm = lower.includes("alarm") || lower.includes("väck") || lower.includes("wake");
+
+      if (isAlarm) {
+        const clockAlarm = parseClockAlarm(segment);
+        if (clockAlarm) {
+        timers.push({
+          name: cleanTimerName(segment) || `Alarm ${clockAlarm.label}`,
+          label: `${state.settings.language === "en" ? "Alarm at" : "Alarm"} ${clockAlarm.label}`,
+          type: "alarm",
+          durationMs: clockAlarm.durationMs,
+          remainingMs: clockAlarm.durationMs,
+          alarmAt: clockAlarm.alarmAt,
+          isRunning: true,
+          color: inferColorFromText(segment)
+        });
+          return;
+        }
+
+        const alarmDurationMs = parseDuration(segment) || 5 * 60 * 1000;
+        timers.push({
+          name: cleanTimerName(segment) || `Alarm ${index + 1}`,
+          label: state.settings.language === "en" ? "Alarm from AI prompt" : "Alarm från AI prompt",
+          type: "alarm",
+          durationMs: alarmDurationMs,
+          remainingMs: alarmDurationMs,
+          alarmAt: Date.now() + alarmDurationMs,
+          isRunning: true,
+          color: inferColorFromText(segment)
+        });
+        return;
+      }
+
+      if (lower.includes("stopwatch") || lower.includes("stoppur")) {
+        const name = cleanTimerName(segment) || `Stopwatch ${index + 1}`;
+        timers.push({
         name,
         label: "Skapad från AI prompt",
         type: "stopwatch",
@@ -1326,10 +1721,10 @@ function parseAiPrompt(input) {
     const name = cleanTimerName(segment) || `Timer ${index + 1}`;
     timers.push({
       name: name.charAt(0).toUpperCase() + name.slice(1),
-      label: "Skapad från AI prompt",
-      type: "countdown",
-      durationMs,
-      color: inferColorFromText(segment),
+        label: state.settings.language === "en" ? "Created from AI prompt" : "Skapad från AI prompt",
+        type: "countdown",
+        durationMs,
+        color: inferColorFromText(segment),
     });
   });
 
@@ -1341,7 +1736,7 @@ function createTimersFromPrompt() {
   const timers = parseAiPrompt(prompt);
 
   if (!timers.length) {
-    setAiStatus("Jag hittade inga tydliga timers. Prova till exempel: besök 20 min, labsvar 10 min, paus 5 min.");
+    setAiStatus(t("aiNoTimers"));
     return;
   }
 
@@ -1351,13 +1746,17 @@ function createTimersFromPrompt() {
   state.activeProfileId = null;
   saveState();
   renderAll();
-  setAiStatus(`${created.length} timer${created.length > 1 ? "s" : ""} skapades från AI-prompten.`);
+  setAiStatus(
+    state.settings.language === "en"
+      ? `${created.length} item${created.length > 1 ? "s" : ""} ${t("aiCreated")}`
+      : `${created.length} objekt ${t("aiCreated")}`
+  );
 }
 
 function startVoiceCapture() {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) {
-    setAiStatus("Röststyrning stöds inte i den här webbläsaren. Skriv prompten i stället.");
+    setAiStatus(t("aiSpeechUnsupported"));
     return;
   }
 
@@ -1372,21 +1771,21 @@ function startVoiceCapture() {
   speechRecognition.maxAlternatives = 1;
 
   speechRecognition.onstart = () => {
-    setAiStatus("Lyssnar nu. Beskriv timers med minuter eller säg stopwatch.");
+    setAiStatus(t("aiListening"));
   };
 
   speechRecognition.onresult = (event) => {
     const transcript = event.results?.[0]?.[0]?.transcript?.trim() || "";
     if (transcript) {
       dom.aiPromptInput.value = transcript;
-      setAiStatus("Röst fångad. Klicka på Skapa med AI för att bygga timers.");
+      setAiStatus(t("aiSpeechCaptured"));
     } else {
-      setAiStatus("Jag hörde inget tydligt. Försök igen.");
+      setAiStatus(t("aiNoTimers"));
     }
   };
 
   speechRecognition.onerror = () => {
-    setAiStatus("Kunde inte läsa mikrofonen. Kontrollera tillstånd och försök igen.");
+    setAiStatus(t("aiSpeechError"));
   };
 
   speechRecognition.onend = () => {
@@ -1429,8 +1828,9 @@ function closeModal() {
 }
 
 function syncDurationVisibility() {
-  dom.durationField.classList.toggle("hidden", dom.timerTypeInput.value !== "countdown");
-  dom.extraTimeInput.closest("#extraTimeFields")?.classList.toggle("hidden", dom.timerTypeInput.value !== "countdown");
+  const countdownLike = dom.timerTypeInput.value === "countdown" || dom.timerTypeInput.value === "alarm";
+  dom.durationField.classList.toggle("hidden", !countdownLike);
+  dom.extraTimeInput.closest("#extraTimeFields")?.classList.toggle("hidden", !countdownLike);
 }
 
 function openDrawer() {
@@ -1521,6 +1921,9 @@ function escapeHtml(value) {
 dom.menuButton.addEventListener("click", openDrawer);
 dom.closeDrawerButton.addEventListener("click", closeDrawer);
 dom.newTimerButton.addEventListener("click", () => openModal());
+dom.langSvButton.addEventListener("click", () => setLanguage("sv"));
+dom.langEnButton.addEventListener("click", () => setLanguage("en"));
+dom.googleTranslateButton.addEventListener("click", openGoogleTranslate);
 dom.saveProfileButton.addEventListener("click", saveCurrentProfile);
 dom.resetBoardButton.addEventListener("click", resetBoard);
 dom.clearProfilesButton.addEventListener("click", clearSavedProfiles);
@@ -1540,7 +1943,12 @@ dom.timerForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const id = dom.timerIdInput.value || createId();
-  const type = dom.timerTypeInput.value === "stopwatch" ? "stopwatch" : "countdown";
+  const type =
+    dom.timerTypeInput.value === "stopwatch"
+      ? "stopwatch"
+      : dom.timerTypeInput.value === "alarm"
+        ? "alarm"
+        : "countdown";
   const baseDurationMs = Math.max(Number(dom.timerDurationInput.value) || 10, 1) * 60 * 1000;
   const extraValue = Math.max(Number(dom.extraTimeInput.value) || 0, 0);
   const extraUnit = dom.extraTimeUnitInput.value === "hours" ? "hours" : "minutes";
@@ -1548,10 +1956,11 @@ dom.timerForm.addEventListener("submit", (event) => {
   const existing = state.timers.find((timer) => timer.id === id);
   const now = Date.now();
   const existingCurrentMs = existing ? getRuntimeMs(existing, now) : 0;
-  let durationMs = type === "countdown" ? baseDurationMs + extraMs : 0;
-  let remainingMs = type === "countdown" ? durationMs : 0;
+  const isCountdownLike = type === "countdown" || type === "alarm";
+  let durationMs = isCountdownLike ? baseDurationMs + extraMs : 0;
+  let remainingMs = isCountdownLike ? durationMs : 0;
 
-  if (existing && type === "countdown" && extraMs > 0) {
+  if (existing && isCountdownLike && extraMs > 0) {
     remainingMs = Math.max(existingCurrentMs + extraMs, 60 * 1000);
     durationMs = Math.max(durationMs, remainingMs);
   }
@@ -1563,13 +1972,18 @@ dom.timerForm.addEventListener("submit", (event) => {
     type,
     color: dom.timerColorInput.value,
     durationMs,
-    remainingMs
+    remainingMs,
+    alarmAt: type === "alarm" ? now + remainingMs : null
   });
 
   if (existing) {
-    if (type === "countdown" && existing.isRunning) {
+    if (isCountdownLike && existing.isRunning) {
       timer.isRunning = true;
-      timer.endAt = now + remainingMs;
+      if (type === "alarm") {
+        timer.alarmAt = now + remainingMs;
+      } else {
+        timer.endAt = now + remainingMs;
+      }
     }
     if (type === "stopwatch" && existing.type === "stopwatch") {
       timer.elapsedMs = existingCurrentMs;
