@@ -1786,12 +1786,34 @@ function setAiStatus(target, message) {
 function inferColorFromText(text) {
   const lower = text.toLowerCase();
   if (lower.includes("paus") || lower.includes("break") || lower.includes("triage")) return "red";
+  if (lower.includes("fika") || lower.includes("coffee")) return "amber";
   if (lower.includes("lab") || lower.includes("svar") || lower.includes("reply") || lower.includes("intro")) return "cyan";
   if (lower.includes("patient") || lower.includes("nästa") || lower.includes("next") || lower.includes("uppfölj")) return "magenta";
-  if (lower.includes("admin") || lower.includes("stopwatch") || lower.includes("vidimer") || lower.includes("validation")) return "lime";
+  if (
+    lower.includes("admin") ||
+    lower.includes("stopwatch") ||
+    lower.includes("stoppur") ||
+    lower.includes("tidtagarur") ||
+    lower.includes("vidimer") ||
+    lower.includes("validation") ||
+    lower.includes("run") ||
+    lower.includes("löp")
+  ) return "lime";
   if (lower.includes("möte") || lower.includes("meeting") || lower.includes("besök") || lower.includes("visit")) return "yellow";
   if (lower.includes("djup") || lower.includes("focus") || lower.includes("fokus")) return "white";
   return "amber";
+}
+
+function hasAnyKeyword(text, keywords) {
+  return keywords.some((keyword) => text.includes(keyword));
+}
+
+function capitalizeWords(text) {
+  return text
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 function parseDuration(text) {
@@ -1829,7 +1851,9 @@ function parseClockAlarm(text) {
   return {
     alarmAt: target.getTime(),
     durationMs: target.getTime() - now.getTime(),
-    label: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+    label: `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`,
+    hour: hours,
+    minute: minutes
   };
 }
 
@@ -1842,87 +1866,270 @@ function cleanTimerName(text) {
     .trim();
 }
 
+function getAiContextSnippet(source, index, length = 0) {
+  const start = Math.max(0, index - 30);
+  const end = Math.min(source.length, index + length + 30);
+  return source.slice(start, end).trim();
+}
+
+function contextWords(context) {
+  return cleanTimerName(context)
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter((word) => word.length > 2);
+}
+
+function fallbackAiTitle(type, context, index) {
+  const isEnglish = state.settings.language === "en";
+  const cleaned = capitalizeWords(contextWords(context).slice(0, 2).join(" "));
+  if (cleaned) {
+    return cleaned;
+  }
+
+  if (type === "alarm") {
+    return isEnglish ? `Alarm ${index}` : `Alarm ${index}`;
+  }
+  if (type === "stopwatch") {
+    return isEnglish ? `Stopwatch ${index}` : `Stoppur ${index}`;
+  }
+  return isEnglish ? `Timer ${index}` : `Timer ${index}`;
+}
+
+function buildAlarmTitle(context, meta = {}) {
+  const lower = context.toLowerCase();
+  const isEnglish = state.settings.language === "en";
+  const hour = Number(meta.hour);
+
+  if (hasAnyKeyword(lower, ["fika", "coffee"])) {
+    if (hour < 11) return isEnglish ? "Morning coffee alarm" : "Morgonfikaalarm";
+    if (hour >= 15) return isEnglish ? "Afternoon coffee alarm" : "Eftermiddagsfikaalarm";
+    return isEnglish ? "Coffee break alarm" : "Fikaalarm";
+  }
+
+  if (hasAnyKeyword(lower, ["lunch"])) {
+    return isEnglish ? "Lunch alarm" : "Lunchalarm";
+  }
+
+  if (hasAnyKeyword(lower, ["meeting", "möte"])) {
+    return isEnglish ? "Meeting alarm" : "Mötesalarm";
+  }
+
+  if (hasAnyKeyword(lower, ["medicine", "medicin", "pill"])) {
+    return isEnglish ? "Medication alarm" : "Medicinalarm";
+  }
+
+  if (hasAnyKeyword(lower, ["wake", "wakeup", "wake-up", "morgon", "väck"])) {
+    return isEnglish ? "Wake-up alarm" : "Väckningsalarm";
+  }
+
+  if (hasAnyKeyword(lower, ["run", "running", "löp", "jogg"])) {
+    return isEnglish ? "Run alert" : "Löpalarm";
+  }
+
+  return isEnglish ? "Custom alarm" : "Eget alarm";
+}
+
+function buildCountdownTitle(context) {
+  const lower = context.toLowerCase();
+  const isEnglish = state.settings.language === "en";
+
+  if (hasAnyKeyword(lower, ["fika", "coffee"])) return isEnglish ? "Coffee break" : "Fikapaus";
+  if (hasAnyKeyword(lower, ["lunch"])) return isEnglish ? "Lunch break" : "Lunchpaus";
+  if (hasAnyKeyword(lower, ["break", "pause", "paus"])) return isEnglish ? "Break timer" : "Paus";
+  if (hasAnyKeyword(lower, ["visit", "besök"])) return isEnglish ? "Visit slot" : "Besökstid";
+  if (hasAnyKeyword(lower, ["lab", "labsvar", "reply", "provsvar"])) return isEnglish ? "Lab follow-up" : "Labsvar";
+  if (hasAnyKeyword(lower, ["patient", "nästa", "next", "handoff"])) return isEnglish ? "Patient handoff" : "Patientbyte";
+  if (hasAnyKeyword(lower, ["focus", "fokus", "study", "djupjobb"])) return isEnglish ? "Focus block" : "Fokusblock";
+  if (hasAnyKeyword(lower, ["meeting", "möte"])) return isEnglish ? "Meeting block" : "Mötesblock";
+  if (hasAnyKeyword(lower, ["admin", "documentation", "docs"])) return isEnglish ? "Admin block" : "Adminblock";
+  if (hasAnyKeyword(lower, ["run", "running", "löp", "jogg", "workout", "träning"])) return isEnglish ? "Training block" : "Träningsblock";
+
+  return isEnglish ? "Custom timer" : "Egen timer";
+}
+
+function buildStopwatchTitle(context) {
+  const lower = context.toLowerCase();
+  const isEnglish = state.settings.language === "en";
+
+  if (hasAnyKeyword(lower, ["run", "running", "löp", "jogg"])) return isEnglish ? "Run stopwatch" : "Löpstoppur";
+  if (hasAnyKeyword(lower, ["workout", "träning", "gym"])) return isEnglish ? "Workout stopwatch" : "Träningsstoppur";
+  if (hasAnyKeyword(lower, ["call", "phone", "samtal"])) return isEnglish ? "Call stopwatch" : "Samtalsstoppur";
+  if (hasAnyKeyword(lower, ["patient", "visit", "besök"])) return isEnglish ? "Visit stopwatch" : "Besöksstoppur";
+  if (hasAnyKeyword(lower, ["focus", "study", "plugg"])) return isEnglish ? "Focus stopwatch" : "Fokusstoppur";
+
+  return isEnglish ? "Stopwatch" : "Stoppur";
+}
+
+function buildAiTitle(type, context, meta = {}) {
+  if (type === "alarm") {
+    return buildAlarmTitle(context, meta);
+  }
+  if (type === "stopwatch") {
+    return buildStopwatchTitle(context);
+  }
+  return buildCountdownTitle(context);
+}
+
+function buildAiLabel(type, meta = {}) {
+  const isEnglish = state.settings.language === "en";
+  if (type === "alarm") {
+    if (meta.relative) {
+      return isEnglish ? `Alarm in ${meta.clockLabel}` : `Alarm om ${meta.clockLabel}`;
+    }
+    return isEnglish ? `Alarm at ${meta.clockLabel}` : `Alarm ${meta.clockLabel}`;
+  }
+  if (type === "stopwatch") {
+    return isEnglish ? "Tracks elapsed time" : "Mäter tid uppåt";
+  }
+  return isEnglish ? `${formatCompactDuration(meta.durationMs)} countdown` : `${formatCompactDuration(meta.durationMs)} timer`;
+}
+
+function finalizeAiItems(items) {
+  const counts = new Map();
+
+  return items.map((item) => {
+    const nextCount = (counts.get(item.name) || 0) + 1;
+    counts.set(item.name, nextCount);
+
+    if (nextCount > 1) {
+      if (item.type === "alarm" && item.clockLabel) {
+        item.name = `${item.name} ${item.clockLabel}`;
+      } else {
+        item.name = `${item.name} ${nextCount}`;
+      }
+    }
+
+    const { order, clockLabel, ...cleanItem } = item;
+    return cleanItem;
+  });
+}
+
 function parseAiPrompt(input) {
   const source = input.trim();
   if (!source) {
     return [];
   }
 
-    const normalized = source
-      .replace(/\n/g, ",")
-      .replace(/\s+och\s+/gi, ",")
-      .replace(/\s+and\s+/gi, ",")
-      .replace(/\s+samt\s+/gi, ",");
+  const items = [];
+  const relativeAlarmPositions = new Set();
+  const clockPattern = /\b(\d{1,2})[:.](\d{2})\b/g;
+  const durationPattern = /(\d+)\s*(tim|timmar|hour|hours|hr|hrs|h|minuter|minute|minutes|mins|min|m|sekunder|second|seconds|secs|sec|sek|s)\b/gi;
+  const stopwatchPattern = /\b(stopwatch|stoppur|tidtagarur|count up|countup|räkna upp)\b/gi;
 
-  const rawSegments = normalized
-    .split(/[,;]+/)
-    .map((segment) => segment.trim())
-    .filter(Boolean);
-
-  const timers = [];
-
-    rawSegments.forEach((segment, index) => {
-      const lower = segment.toLowerCase();
-      const isAlarm = lower.includes("alarm") || lower.includes("väck") || lower.includes("wake");
-
-      if (isAlarm) {
-        const clockAlarm = parseClockAlarm(segment);
-        if (clockAlarm) {
-        timers.push({
-          name: cleanTimerName(segment) || `Alarm ${clockAlarm.label}`,
-          label: `${state.settings.language === "en" ? "Alarm at" : "Alarm"} ${clockAlarm.label}`,
-          type: "alarm",
-          durationMs: clockAlarm.durationMs,
-          remainingMs: clockAlarm.durationMs,
-          alarmAt: clockAlarm.alarmAt,
-          isRunning: true,
-          color: inferColorFromText(segment)
-        });
-          return;
-        }
-
-        const alarmDurationMs = parseDuration(segment) || 5 * 60 * 1000;
-        timers.push({
-          name: cleanTimerName(segment) || `Alarm ${index + 1}`,
-          label: state.settings.language === "en" ? "Alarm from AI prompt" : "Alarm från AI prompt",
-          type: "alarm",
-          durationMs: alarmDurationMs,
-          remainingMs: alarmDurationMs,
-          alarmAt: Date.now() + alarmDurationMs,
-          isRunning: true,
-          color: inferColorFromText(segment)
-        });
-        return;
-      }
-
-      if (lower.includes("stopwatch") || lower.includes("stoppur")) {
-        const name = cleanTimerName(segment) || `Stopwatch ${index + 1}`;
-        timers.push({
-        name,
-        label: state.settings.language === "en" ? "Created from AI prompt" : "Skapad från AI prompt",
-        type: "stopwatch",
-        durationMs: 0,
-        color: inferColorFromText(segment),
-      });
-      return;
+  let match;
+  let alarmIndex = 1;
+  while ((match = clockPattern.exec(source))) {
+    const parsed = parseClockAlarm(match[0]);
+    if (!parsed) {
+      continue;
     }
 
-    const durationMs = parseDuration(segment);
-    if (!durationMs) {
-      return;
-    }
-
-    const name = cleanTimerName(segment) || `Timer ${index + 1}`;
-    timers.push({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-        label: state.settings.language === "en" ? "Created from AI prompt" : "Skapad från AI prompt",
-        type: "countdown",
-        durationMs,
-        color: inferColorFromText(segment),
+    const context = getAiContextSnippet(source, match.index, match[0].length);
+    items.push({
+      order: match.index,
+      name: buildAiTitle("alarm", context, parsed) || fallbackAiTitle("alarm", context, alarmIndex),
+      label: buildAiLabel("alarm", { clockLabel: parsed.label }),
+      type: "alarm",
+      durationMs: parsed.durationMs,
+      remainingMs: parsed.durationMs,
+      alarmAt: parsed.alarmAt,
+      isRunning: true,
+      color: inferColorFromText(context),
+      clockLabel: parsed.label
     });
-  });
+    alarmIndex += 1;
+  }
 
-  return timers;
+  let durationIndex = 1;
+  while ((match = durationPattern.exec(source))) {
+    const durationMs = parseDuration(match[0]);
+    if (!durationMs) {
+      continue;
+    }
+
+    const context = getAiContextSnippet(source, match.index, match[0].length);
+    const lower = context.toLowerCase();
+    const alarmIntent = hasAnyKeyword(lower, ["alarm", "alarms", "wake", "wakeup", "wake-up", "väck", "påminn", "remind", "klock"]);
+    const stopwatchIntent = hasAnyKeyword(lower, ["stopwatch", "stoppur", "tidtagarur", "count up", "countup", "räkna upp"]);
+    const timerIntent = hasAnyKeyword(lower, [
+      "timer",
+      "timers",
+      "countdown",
+      "break",
+      "pause",
+      "paus",
+      "visit",
+      "besök",
+      "meeting",
+      "möte",
+      "focus",
+      "fokus",
+      "study",
+      "lab",
+      "reply",
+      "patient",
+      "admin",
+      "block",
+      "session",
+      "fika",
+      "coffee",
+      "lunch"
+    ]);
+
+    if (alarmIntent && !timerIntent) {
+      relativeAlarmPositions.add(match.index);
+      items.push({
+        order: match.index + 0.01,
+        name: buildAiTitle("alarm", context, {}) || fallbackAiTitle("alarm", context, alarmIndex),
+        label: isNaN(durationMs)
+          ? buildAiLabel("alarm", { clockLabel: "--:--", relative: true })
+          : buildAiLabel("alarm", { clockLabel: formatCompactDuration(durationMs), relative: true }),
+        type: "alarm",
+        durationMs,
+        remainingMs: durationMs,
+        alarmAt: Date.now() + durationMs,
+        isRunning: true,
+        color: inferColorFromText(context),
+        clockLabel: formatCompactDuration(durationMs)
+      });
+      alarmIndex += 1;
+      continue;
+    }
+
+    if (relativeAlarmPositions.has(match.index) || (stopwatchIntent && !timerIntent)) {
+      continue;
+    }
+
+    items.push({
+      order: match.index + 0.02,
+      name: buildAiTitle("countdown", context, {}) || fallbackAiTitle("countdown", context, durationIndex),
+      label: buildAiLabel("countdown", { durationMs }),
+      type: "countdown",
+      durationMs,
+      color: inferColorFromText(context)
+    });
+    durationIndex += 1;
+  }
+
+  let stopwatchIndex = 1;
+  while ((match = stopwatchPattern.exec(source))) {
+    const context = getAiContextSnippet(source, match.index, match[0].length);
+    items.push({
+      order: match.index + 0.03,
+      name: buildAiTitle("stopwatch", context, {}) || fallbackAiTitle("stopwatch", context, stopwatchIndex),
+      label: buildAiLabel("stopwatch"),
+      type: "stopwatch",
+      durationMs: 0,
+      color: inferColorFromText(context)
+    });
+    stopwatchIndex += 1;
+  }
+
+  return finalizeAiItems(
+    items
+      .sort((a, b) => a.order - b.order)
+      .filter((item) => item.name)
+  );
 }
 
 function createTimersFromPromptSource(promptInput, statusTarget, options = {}) {
