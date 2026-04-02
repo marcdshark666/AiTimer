@@ -89,6 +89,14 @@ const UI_TEXT = {
     saveProfile: "Spara profil",
     resetBoard: "Reset board",
     newTimer: "Ny timer",
+    editTimer: "Redigera timer",
+    manualMode: "Manuell",
+    aiMode: "AI text / röst",
+    modalAiTitle: "Skapa timer, alarm eller stopwatch med AI",
+    modalAiDescription: "Skriv fritt eller prata. AI-byggaren kan skapa flera element samtidigt direkt i din board.",
+    prompt: "Prompt",
+    saveTimer: "Spara timer",
+    deleteTimer: "Ta bort",
     profileSaved: "profil sparad",
     aiCreated: "skapades från AI-prompten.",
     aiNoTimers: "Jag hittade inga tydliga timers. Prova till exempel: besök 20 min, labsvar 10 min, paus 5 min eller alarm 07:30.",
@@ -131,6 +139,14 @@ const UI_TEXT = {
     saveProfile: "Save profile",
     resetBoard: "Reset board",
     newTimer: "New timer",
+    editTimer: "Edit timer",
+    manualMode: "Manual",
+    aiMode: "AI text / voice",
+    modalAiTitle: "Create a timer, alarm, or stopwatch with AI",
+    modalAiDescription: "Write naturally or speak. The AI builder can create several items at once directly on your board.",
+    prompt: "Prompt",
+    saveTimer: "Save timer",
+    deleteTimer: "Delete",
     profileSaved: "profile saved",
     aiCreated: "created from the AI prompt.",
     aiNoTimers: "I couldn't find any clear timers. Try for example: visit 20 min, lab reply 10 min, break 5 min or alarm 07:30.",
@@ -194,6 +210,17 @@ const dom = {
   timerModal: document.getElementById("timerModal"),
   timerForm: document.getElementById("timerForm"),
   timerModalTitle: document.getElementById("timerModalTitle"),
+  modalModeSwitch: document.getElementById("modalModeSwitch"),
+  manualModeButton: document.getElementById("manualModeButton"),
+  aiModeButton: document.getElementById("aiModeButton"),
+  modalAiBuilder: document.getElementById("modalAiBuilder"),
+  modalAiTitle: document.getElementById("modalAiTitle"),
+  modalAiDescription: document.getElementById("modalAiDescription"),
+  modalAiPromptLabel: document.getElementById("modalAiPromptLabel"),
+  modalAiPromptInput: document.getElementById("modalAiPromptInput"),
+  modalGenerateAiButton: document.getElementById("modalGenerateAiButton"),
+  modalListenAiButton: document.getElementById("modalListenAiButton"),
+  modalAiStatus: document.getElementById("modalAiStatus"),
   cancelModalButton: document.getElementById("cancelModalButton"),
   deleteTimerButton: document.getElementById("deleteTimerButton"),
   timerIdInput: document.getElementById("timerIdInput"),
@@ -217,6 +244,7 @@ const dom = {
 let state = loadState();
 let isFocusOpen = false;
 let speechRecognition = null;
+let modalMode = "manual";
 let locationState = {
   lat: 52.2297,
   lon: 21.0122,
@@ -226,6 +254,16 @@ let locationState = {
 
 if (dom.aiStatus) {
   dom.aiStatus.dataset.locked = "false";
+}
+
+if (dom.modalAiStatus) {
+  dom.modalAiStatus.dataset.locked = "false";
+}
+
+if (!state.settings.languageChosen) {
+  state.settings.language = "en";
+  state.settings.languageChosen = true;
+  saveState();
 }
 
 ensureSelectedTimer();
@@ -248,6 +286,7 @@ function t(key) {
 
 function setLanguage(language) {
   state.settings.language = language === "en" ? "en" : "sv";
+  state.settings.languageChosen = true;
   saveState();
   applyStaticTranslations();
   renderAll();
@@ -258,6 +297,35 @@ function openGoogleTranslate() {
   const targetLang = state.settings.language === "en" ? "sv" : "en";
   const translatedUrl = `https://translate.google.com/translate?sl=auto&tl=${targetLang}&u=${encodeURIComponent(currentUrl)}`;
   window.open(translatedUrl, "_blank", "noopener,noreferrer");
+}
+
+function setText(target, text) {
+  const element = typeof target === "string" ? document.querySelector(target) : target;
+  if (element) {
+    element.textContent = text;
+  }
+}
+
+function setFieldLabel(target, spanId, text) {
+  const label = target?.matches?.("label") ? target : target?.closest?.("label");
+  if (!label) {
+    return;
+  }
+
+  let caption = label.querySelector(`#${spanId}`);
+  if (!caption) {
+    caption = document.createElement("span");
+    caption.id = spanId;
+    label.insertBefore(caption, label.firstChild);
+  }
+
+  caption.textContent = text;
+
+  Array.from(label.childNodes).forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      node.textContent = "";
+    }
+  });
 }
 
 function applyStaticTranslations() {
@@ -279,6 +347,117 @@ function applyStaticTranslations() {
   dom.googleTranslateButton.textContent = "Google Translate";
   dom.generateAiButton.textContent = state.settings.language === "en" ? "Create with AI" : "Skapa med AI";
   dom.listenAiButton.textContent = state.settings.language === "en" ? "Listen" : "Lyssna";
+  dom.manualModeButton.textContent = t("manualMode");
+  dom.aiModeButton.textContent = t("aiMode");
+  dom.modalAiTitle.textContent = t("modalAiTitle");
+  dom.modalAiDescription.textContent = t("modalAiDescription");
+  dom.modalAiPromptLabel.textContent = t("prompt");
+  dom.modalGenerateAiButton.textContent = state.settings.language === "en" ? "Create with AI" : "Skapa med AI";
+  dom.modalListenAiButton.textContent = state.settings.language === "en" ? "Listen" : "Lyssna";
+  dom.deleteTimerButton.textContent = t("deleteTimer");
+
+  const modalSubmitButton = dom.timerForm.querySelector('button[type="submit"]');
+  if (modalSubmitButton) {
+    modalSubmitButton.textContent = t("saveTimer");
+  }
+
+  const shortcutsPanel = document.querySelectorAll(".control-deck .deck-panel")[1];
+  if (shortcutsPanel) {
+    setText(shortcutsPanel.querySelector(".section-kicker"), state.settings.language === "en" ? "System" : "System");
+    setText(shortcutsPanel.querySelector("h3"), state.settings.language === "en" ? "Shortcuts" : "Snabbkommandon");
+    const shortcutDescriptions = state.settings.language === "en"
+      ? [
+          "Start or pause the selected timer",
+          "Create a new timer",
+          "Open focus mode for the selected timer"
+        ]
+      : [
+          "Starta eller pausa vald timer",
+          "Skapa en ny timer",
+          "Öppna fokusläge för vald timer"
+        ];
+    shortcutsPanel.querySelectorAll(".shortcut-list p").forEach((item, index) => {
+      item.textContent = shortcutDescriptions[index] || item.textContent;
+    });
+  }
+
+  const freePanel = document.querySelectorAll(".control-deck .deck-panel")[2];
+  if (freePanel) {
+    setText(freePanel.querySelector(".section-kicker"), state.settings.language === "en" ? "Free" : "Gratis");
+    setText(freePanel.querySelector("h3"), state.settings.language === "en" ? "Everything here is open" : "Allt här är öppet");
+    const freeItems = state.settings.language === "en"
+      ? [
+          "Countdown, stopwatch, and Pomodoro presets",
+          "History, local storage, and editing",
+          "Responsive design for mobile, tablet, and desktop"
+        ]
+      : [
+          "Countdown, stopwatch och Pomodoro-preset",
+          "Historik, lokal lagring och redigering",
+          "Responsiv design för mobil, surfplatta och desktop"
+        ];
+    freePanel.querySelectorAll(".feature-list li").forEach((item, index) => {
+      item.textContent = freeItems[index] || item.textContent;
+    });
+  }
+
+  setText(".drawer-header .section-kicker", state.settings.language === "en" ? "Profiles and timers" : "Profiler och timers");
+  setText(".drawer-header h3", state.settings.language === "en" ? "Build your board" : "Bygg din board");
+  dom.closeDrawerButton.setAttribute("aria-label", state.settings.language === "en" ? "Close side panel" : "Stäng sidopanel");
+  dom.cancelModalButton.setAttribute("aria-label", state.settings.language === "en" ? "Close form" : "Stäng formulär");
+
+  const drawerSectionTitles = state.settings.language === "en"
+    ? ["Professional profiles", "Saved profiles", "AI Studio", "Timer library", "Settings", "History"]
+    : ["Professionella profiler", "Sparade profiler", "AI Studio", "Timerbibliotek", "Inställningar", "Historik"];
+  document.querySelectorAll(".drawer-section h4").forEach((item, index) => {
+    item.textContent = drawerSectionTitles[index] || item.textContent;
+  });
+
+  const drawerAiLabel = dom.aiPromptInput.closest("label")?.querySelector(".section-kicker");
+  if (drawerAiLabel) {
+    drawerAiLabel.textContent = t("prompt");
+  }
+
+  const drawerAiDescription = dom.aiPromptInput.closest(".drawer-section")?.querySelector(".preset-description");
+  if (drawerAiDescription) {
+    drawerAiDescription.textContent =
+      state.settings.language === "en"
+        ? "Write or speak and the assistant will build timers directly from your prompt."
+        : "Skriv eller prata, så bygger assistenten timers direkt från din text.";
+  }
+
+  dom.clearProfilesButton.textContent = state.settings.language === "en" ? "Clear" : "Rensa";
+  dom.clearHistoryButton.textContent = state.settings.language === "en" ? "Clear" : "Rensa";
+
+  const toggleLabels = state.settings.language === "en"
+    ? ["Sound when a timer finishes", "Show milliseconds", "Ambient motion"]
+    : ["Ljud vid färdig timer", "Visa millisekunder", "Ambient rörelse"];
+  document.querySelectorAll(".toggle-row span").forEach((item, index) => {
+    item.textContent = toggleLabels[index] || item.textContent;
+  });
+
+  setFieldLabel(dom.timerNameInput, "timerNameLabel", state.settings.language === "en" ? "Name" : "Namn");
+  setFieldLabel(dom.timerLabelInput, "timerDescriptionLabel", state.settings.language === "en" ? "Description" : "Beskrivning");
+  setFieldLabel(dom.timerTypeInput, "timerTypeLabel", state.settings.language === "en" ? "Type" : "Typ");
+  setFieldLabel(dom.timerColorInput, "timerColorLabel", state.settings.language === "en" ? "Color" : "Färg");
+  setFieldLabel(dom.durationField, "durationFieldLabel", state.settings.language === "en" ? "Base time in minutes" : "Bas tid i minuter");
+  setFieldLabel(dom.extraTimeInput, "extraTimeLabel", state.settings.language === "en" ? "Add extra time" : "Lägg till");
+  setFieldLabel(dom.extraTimeUnitInput, "extraTimeUnitLabel", state.settings.language === "en" ? "Unit" : "Enhet");
+
+  const colorLabels = state.settings.language === "en"
+    ? ["Magenta", "Cyan", "Lime", "Amber", "Red", "Yellow", "White"]
+    : ["Magenta", "Cyan", "Lime", "Amber", "Röd", "Gul", "Vit"];
+  Array.from(dom.timerColorInput.options).forEach((option, index) => {
+    option.textContent = colorLabels[index] || option.textContent;
+  });
+
+  const extraUnitLabels = state.settings.language === "en" ? ["Minutes", "Hours"] : ["Minuter", "Timmar"];
+  Array.from(dom.extraTimeUnitInput.options).forEach((option, index) => {
+    option.textContent = extraUnitLabels[index] || option.textContent;
+  });
+
+  dom.menuButton.setAttribute("aria-label", state.settings.language === "en" ? "Open side panel" : "Öppna sidopanel");
+  dom.timerBoard.setAttribute("aria-label", state.settings.language === "en" ? "Timer overview" : "Timeröversikt");
 
   const heroKicker = document.querySelector(".hero-strip .section-kicker");
   if (heroKicker) {
@@ -319,6 +498,17 @@ function applyStaticTranslations() {
   if (dom.aiStatus && (!dom.aiStatus.dataset.locked || dom.aiStatus.dataset.locked === "false")) {
     dom.aiStatus.textContent = t("aiReady");
   }
+
+  if (dom.modalAiPromptInput) {
+    dom.modalAiPromptInput.placeholder =
+      state.settings.language === "en"
+        ? "Example: create visit 20 min, lab reply 10 min, break 5 min, alarm 07:30 and a stopwatch for validation"
+        : "Exempel: skapa besök 20 min, labsvar 10 min, paus 5 min, alarm 07:30 och en stopwatch för vidimering";
+  }
+
+  if (dom.modalAiStatus && (!dom.modalAiStatus.dataset.locked || dom.modalAiStatus.dataset.locked === "false")) {
+    dom.modalAiStatus.textContent = t("aiReady");
+  }
 }
 
 function requestUserLocation() {
@@ -356,7 +546,8 @@ function loadState() {
       soundEnabled: true,
       showMilliseconds: true,
       ambientMotion: true,
-      language: "sv"
+      language: "en",
+      languageChosen: false
     },
     timers: [],
     history: [],
@@ -1584,9 +1775,12 @@ function clearSavedProfiles() {
   renderAll();
 }
 
-function setAiStatus(message) {
-  dom.aiStatus.dataset.locked = "true";
-  dom.aiStatus.textContent = message;
+function setAiStatus(target, message) {
+  if (!target) {
+    return;
+  }
+  target.dataset.locked = "true";
+  target.textContent = message;
 }
 
 function inferColorFromText(text) {
@@ -1601,15 +1795,15 @@ function inferColorFromText(text) {
 }
 
 function parseDuration(text) {
-  const match = text.match(/(\d+)\s*(tim|timmar|h|min|m|minuter|sek|sekunder|s)\b/i);
+  const match = text.match(/(\d+)\s*(tim|timmar|hour|hours|hr|hrs|h|minuter|minute|minutes|mins|min|m|sekunder|second|seconds|secs|sec|sek|s)\b/i);
   if (!match) {
     return null;
   }
 
   const amount = Number(match[1]);
   const unit = match[2].toLowerCase();
-  if (unit.startsWith("tim") || unit === "h") return amount * 60 * 60 * 1000;
-  if (unit.startsWith("sek") || unit === "s") return amount * 1000;
+  if (unit.startsWith("tim") || unit.startsWith("hour") || unit.startsWith("hr") || unit === "h") return amount * 60 * 60 * 1000;
+  if (unit.startsWith("sek") || unit.startsWith("sec") || unit.startsWith("second") || unit === "s") return amount * 1000;
   return amount * 60 * 1000;
 }
 
@@ -1641,8 +1835,8 @@ function parseClockAlarm(text) {
 
 function cleanTimerName(text) {
   return text
-    .replace(/\b(skapa|lägg till|gör|bygg|timer|timers|alarm|stoppur|stopwatch|en|ett)\b/gi, "")
-    .replace(/\d+\s*(tim|timmar|h|min|m|minuter|sek|sekunder|s)\b/gi, "")
+    .replace(/\b(skapa|lägg till|gör|bygg|create|add|make|build|timer|timers|countdown|alarm|stoppur|stopwatch|en|ett|a|an)\b/gi, "")
+    .replace(/\d+\s*(tim|timmar|hour|hours|hr|hrs|h|minuter|minute|minutes|mins|min|m|sekunder|second|seconds|secs|sec|sek|s)\b/gi, "")
     .replace(/[:.-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -1705,7 +1899,7 @@ function parseAiPrompt(input) {
         const name = cleanTimerName(segment) || `Stopwatch ${index + 1}`;
         timers.push({
         name,
-        label: "Skapad från AI prompt",
+        label: state.settings.language === "en" ? "Created from AI prompt" : "Skapad från AI prompt",
         type: "stopwatch",
         durationMs: 0,
         color: inferColorFromText(segment),
@@ -1731,12 +1925,12 @@ function parseAiPrompt(input) {
   return timers;
 }
 
-function createTimersFromPrompt() {
-  const prompt = dom.aiPromptInput.value.trim();
+function createTimersFromPromptSource(promptInput, statusTarget, options = {}) {
+  const prompt = promptInput?.value?.trim() || "";
   const timers = parseAiPrompt(prompt);
 
   if (!timers.length) {
-    setAiStatus(t("aiNoTimers"));
+    setAiStatus(statusTarget, t("aiNoTimers"));
     return;
   }
 
@@ -1746,17 +1940,27 @@ function createTimersFromPrompt() {
   state.activeProfileId = null;
   saveState();
   renderAll();
+
   setAiStatus(
+    statusTarget,
     state.settings.language === "en"
       ? `${created.length} item${created.length > 1 ? "s" : ""} ${t("aiCreated")}`
       : `${created.length} objekt ${t("aiCreated")}`
   );
+
+  if (options.closeModalAfterCreate) {
+    closeModal();
+  }
 }
 
-function startVoiceCapture() {
+function createTimersFromPrompt() {
+  createTimersFromPromptSource(dom.aiPromptInput, dom.aiStatus);
+}
+
+function startVoiceCaptureFor(promptInput, statusTarget) {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Recognition) {
-    setAiStatus(t("aiSpeechUnsupported"));
+    setAiStatus(statusTarget, t("aiSpeechUnsupported"));
     return;
   }
 
@@ -1766,26 +1970,26 @@ function startVoiceCapture() {
   }
 
   speechRecognition = new Recognition();
-  speechRecognition.lang = "sv-SE";
+  speechRecognition.lang = state.settings.language === "en" ? "en-US" : "sv-SE";
   speechRecognition.interimResults = false;
   speechRecognition.maxAlternatives = 1;
 
   speechRecognition.onstart = () => {
-    setAiStatus(t("aiListening"));
+    setAiStatus(statusTarget, t("aiListening"));
   };
 
   speechRecognition.onresult = (event) => {
     const transcript = event.results?.[0]?.[0]?.transcript?.trim() || "";
     if (transcript) {
-      dom.aiPromptInput.value = transcript;
-      setAiStatus(t("aiSpeechCaptured"));
+      promptInput.value = transcript;
+      setAiStatus(statusTarget, t("aiSpeechCaptured"));
     } else {
-      setAiStatus(t("aiNoTimers"));
+      setAiStatus(statusTarget, t("aiNoTimers"));
     }
   };
 
   speechRecognition.onerror = () => {
-    setAiStatus(t("aiSpeechError"));
+    setAiStatus(statusTarget, t("aiSpeechError"));
   };
 
   speechRecognition.onend = () => {
@@ -1793,6 +1997,10 @@ function startVoiceCapture() {
   };
 
   speechRecognition.start();
+}
+
+function startVoiceCapture() {
+  startVoiceCaptureFor(dom.aiPromptInput, dom.aiStatus);
 }
 
 function updateTimer(timerId, mutator) {
@@ -1804,9 +2012,28 @@ function updateTimer(timerId, mutator) {
   saveState();
   renderAll();
 }
+
+function setModalMode(mode) {
+  modalMode = mode === "ai" ? "ai" : "manual";
+  const isAiMode = modalMode === "ai";
+
+  dom.manualModeButton.classList.toggle("is-active", !isAiMode);
+  dom.manualModeButton.setAttribute("aria-selected", String(!isAiMode));
+  dom.aiModeButton.classList.toggle("is-active", isAiMode);
+  dom.aiModeButton.setAttribute("aria-selected", String(isAiMode));
+  dom.modalAiBuilder.classList.toggle("hidden", !isAiMode);
+  dom.timerForm.classList.toggle("hidden", isAiMode);
+}
+
+function resetModalAiState() {
+  dom.modalAiPromptInput.value = "";
+  dom.modalAiStatus.dataset.locked = "false";
+  dom.modalAiStatus.textContent = t("aiReady");
+}
+
 function openModal(timerId = null) {
   const timer = state.timers.find((entry) => entry.id === timerId) || null;
-  dom.timerModalTitle.textContent = timer ? "Redigera timer" : "Ny timer";
+  dom.timerModalTitle.textContent = timer ? t("editTimer") : t("newTimer");
   dom.deleteTimerButton.classList.toggle("hidden", !timer);
   dom.timerIdInput.value = timer?.id || "";
   dom.timerNameInput.value = timer?.name || "";
@@ -1816,7 +2043,11 @@ function openModal(timerId = null) {
   dom.timerDurationInput.value = timer ? Math.max(Math.round((timer.durationMs || 600000) / 60000), 1) : 10;
   dom.extraTimeInput.value = 0;
   dom.extraTimeUnitInput.value = "minutes";
+  dom.modalModeSwitch.classList.toggle("hidden", Boolean(timer));
+  resetModalAiState();
+  setModalMode("manual");
   syncDurationVisibility();
+  document.body.classList.add("modal-open");
   dom.overlay.classList.remove("hidden");
   dom.timerModal.classList.remove("hidden");
   dom.timerNameInput.focus();
@@ -1824,13 +2055,14 @@ function openModal(timerId = null) {
 
 function closeModal() {
   dom.timerModal.classList.add("hidden");
+  document.body.classList.remove("modal-open");
   syncOverlay();
 }
 
 function syncDurationVisibility() {
   const countdownLike = dom.timerTypeInput.value === "countdown" || dom.timerTypeInput.value === "alarm";
   dom.durationField.classList.toggle("hidden", !countdownLike);
-  dom.extraTimeInput.closest("#extraTimeFields")?.classList.toggle("hidden", !countdownLike);
+  document.getElementById("extraTimeFields")?.classList.toggle("hidden", !countdownLike);
 }
 
 function openDrawer() {
@@ -1929,6 +2161,12 @@ dom.resetBoardButton.addEventListener("click", resetBoard);
 dom.clearProfilesButton.addEventListener("click", clearSavedProfiles);
 dom.generateAiButton.addEventListener("click", createTimersFromPrompt);
 dom.listenAiButton.addEventListener("click", startVoiceCapture);
+dom.manualModeButton.addEventListener("click", () => setModalMode("manual"));
+dom.aiModeButton.addEventListener("click", () => setModalMode("ai"));
+dom.modalGenerateAiButton.addEventListener("click", () =>
+  createTimersFromPromptSource(dom.modalAiPromptInput, dom.modalAiStatus, { closeModalAfterCreate: true })
+);
+dom.modalListenAiButton.addEventListener("click", () => startVoiceCaptureFor(dom.modalAiPromptInput, dom.modalAiStatus));
 dom.cancelModalButton.addEventListener("click", closeModal);
 dom.closeFocusButton.addEventListener("click", closeFocus);
 dom.overlay.addEventListener("click", () => {
@@ -1943,6 +2181,11 @@ dom.timerForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const id = dom.timerIdInput.value || createId();
+  const name = dom.timerNameInput.value.trim();
+  if (!name) {
+    dom.timerNameInput.focus();
+    return;
+  }
   const type =
     dom.timerTypeInput.value === "stopwatch"
       ? "stopwatch"
@@ -1967,7 +2210,7 @@ dom.timerForm.addEventListener("submit", (event) => {
 
   const timer = createTimer({
     id,
-    name: dom.timerNameInput.value.trim(),
+    name,
     label: dom.timerLabelInput.value.trim(),
     type,
     color: dom.timerColorInput.value,
@@ -2040,7 +2283,7 @@ dom.clearHistoryButton.addEventListener("click", () => {
 
 window.addEventListener("keydown", (event) => {
   const activeTag = document.activeElement?.tagName;
-  if (activeTag === "INPUT" || activeTag === "SELECT") {
+  if (activeTag === "INPUT" || activeTag === "SELECT" || activeTag === "TEXTAREA") {
     return;
   }
 

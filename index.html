@@ -186,22 +186,57 @@
             ×
           </button>
         </div>
-        <form id="timerForm" class="timer-form">
+        <div class="modal-mode-switch" id="modalModeSwitch" role="tablist" aria-label="Skaparläge">
+          <button type="button" class="mode-chip is-active" id="manualModeButton" data-modal-mode="manual" aria-selected="true">
+            Manuell
+          </button>
+          <button type="button" class="mode-chip" id="aiModeButton" data-modal-mode="ai" aria-selected="false">
+            AI text / röst
+          </button>
+        </div>
+
+        <section class="modal-ai-builder hidden" id="modalAiBuilder">
+          <div class="modal-ai-copy">
+            <p class="section-kicker">AI Builder</p>
+            <h4 id="modalAiTitle">Skapa timer, alarm eller stopwatch med AI</h4>
+            <p class="preset-description" id="modalAiDescription">
+              Skriv fritt eller prata. AI-byggaren kan skapa flera element samtidigt direkt i din board.
+            </p>
+          </div>
+
+          <label class="modal-ai-label" for="modalAiPromptInput">
+            <span id="modalAiPromptLabel">Prompt</span>
+            <textarea
+              id="modalAiPromptInput"
+              class="ai-textarea"
+              rows="6"
+              placeholder="Exempel: skapa besök 20 min, labsvar 10 min, paus 5 min, alarm 07:30 och en stopwatch för vidimering"
+            ></textarea>
+          </label>
+
+          <div class="profile-actions">
+            <button type="button" class="primary-button" id="modalGenerateAiButton">Skapa med AI</button>
+            <button type="button" class="ghost-button" id="modalListenAiButton">Lyssna</button>
+          </div>
+          <p class="saved-profile-meta" id="modalAiStatus">Redo att skapa timers från text eller röst.</p>
+        </section>
+
+        <form id="timerForm" class="timer-form" novalidate>
           <input type="hidden" id="timerIdInput" />
 
           <label>
-            Namn
+            <span id="timerNameLabel">Name</span>
             <input type="text" id="timerNameInput" name="name" maxlength="32" required />
           </label>
 
           <label>
-            Beskrivning
+            <span id="timerDescriptionLabel">Description</span>
             <input type="text" id="timerLabelInput" name="label" maxlength="48" />
           </label>
 
           <div class="form-grid">
             <label>
-              Typ
+              <span id="timerTypeLabel">Type</span>
               <select id="timerTypeInput" name="type">
                 <option value="countdown">Countdown</option>
                 <option value="stopwatch">Stopwatch</option>
@@ -211,6 +246,7 @@
 
             <label>
               Färg
+              <span id="timerColorLabel">Color</span>
               <select id="timerColorInput" name="color">
                 <option value="magenta">Magenta</option>
                 <option value="cyan">Cyan</option>

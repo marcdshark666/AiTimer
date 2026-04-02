@@ -60,6 +60,10 @@ body.motion-paused .orb-shell::after {
   animation-play-state: paused;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 button,
 input,
 select {
@@ -808,18 +812,25 @@ body.drawer-open .drawer {
   position: fixed;
   inset: 0;
   display: grid;
-  place-items: center;
+  align-items: start;
+  justify-items: center;
   padding: 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   z-index: 2;
 }
 
 .modal-card {
   width: min(100%, 620px);
+  max-height: calc(100vh - 44px);
   padding: 24px;
   border-radius: 30px;
   background: linear-gradient(180deg, rgba(17, 22, 46, 0.96), rgba(8, 11, 23, 0.98));
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .timer-form {
@@ -850,6 +861,67 @@ body.drawer-open .drawer {
   resize: vertical;
   font-family: var(--space-font);
   line-height: 1.6;
+}
+
+.modal-mode-switch {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 8px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mode-chip {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.mode-chip.is-active {
+  border-color: rgba(137, 240, 255, 0.24);
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.16), rgba(205, 79, 255, 0.12));
+  color: var(--text);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.modal-ai-builder {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(11, 16, 35, 0.9), rgba(8, 12, 26, 0.84)),
+    radial-gradient(circle at top right, rgba(0, 245, 255, 0.08), transparent 34%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-ai-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.modal-ai-copy h4 {
+  margin: 0;
+  font-family: var(--display-font);
+  font-size: 1.1rem;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.modal-ai-label {
+  display: grid;
+  gap: 10px;
+  color: var(--muted);
 }
 
 .form-grid,
